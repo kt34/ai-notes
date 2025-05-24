@@ -3,5 +3,4 @@ uvicorn[standard]
 deepgram-sdk
 openai
 supabase
-aioredis
 python-dotenv
