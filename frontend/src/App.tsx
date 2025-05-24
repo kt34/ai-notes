@@ -4,6 +4,8 @@ import './App.css';
 function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
+  const [summary, setSummary] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -56,6 +58,9 @@ function App() {
   };
 
   const stopRecording = () => {
+    setIsProcessing(true); // Indicate we're waiting for summary
+    
+    // Stop audio processing
     if (processorRef.current) {
       processorRef.current.disconnect();
       processorRef.current = null;
@@ -68,10 +73,8 @@ function App() {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
+    
+    // Don't close WebSocket here - wait for summary
     setIsRecording(false);
   };
 
@@ -82,6 +85,9 @@ function App() {
     }
 
     try {
+      setIsProcessing(false);
+      setSummary('');
+      
       // Setup WebSocket first
       socketRef.current = new WebSocket(backendUrl);
       
@@ -139,74 +145,200 @@ function App() {
         const message = JSON.parse(event.data);
         if (message.partial) {
           setTranscription(prev => {
-            // Keep only the last few partials to avoid the text growing too long
             const parts = prev.split(' ');
             const newParts = [...parts.slice(-20), message.partial];
             return newParts.join(' ');
           });
         } else if (message.summary) {
-          setTranscription(message.summary);
+          setSummary(message.summary);
+          if (message.transcript) {
+            setTranscription(message.transcript);
+          }
+          setIsProcessing(false);
+          // Now we can safely close the WebSocket
+          if (socketRef.current) {
+            socketRef.current.close();
+            socketRef.current = null;
+          }
+        } else if (message.error) {
+          setSummary(`Error: ${message.error}`);
+          setTranscription('An error occurred during processing. Please try again.');
+          setIsProcessing(false);
+          if (socketRef.current) {
+            socketRef.current.close();
+            socketRef.current = null;
+          }
         }
       };
 
       socketRef.current.onerror = (error) => {
         console.error('WebSocket error:', error);
+        setIsProcessing(false);
         stopRecording();
         setTranscription('Error: Connection failed');
       };
 
       socketRef.current.onclose = () => {
         console.log('WebSocket closed');
-        stopRecording();
+        setIsProcessing(false);
       };
 
     } catch (error) {
       console.error('Setup error:', error);
+      setIsProcessing(false);
       stopRecording();
       setTranscription('Error: Could not access microphone');
     }
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>AI Classroom Notes</h1>
-        <button 
-          onClick={handleToggleRecording} 
-          style={{ 
-            padding: '20px', 
-            fontSize: '20px', 
-            cursor: 'pointer',
-            backgroundColor: isRecording ? '#ff4444' : '#44ff44',
-            border: 'none',
-            borderRadius: '10px',
-            color: 'white',
+    <div className="App" style={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '40px 20px'
+      }}>
+        <header style={{
+          textAlign: 'center',
+          marginBottom: '40px'
+        }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            color: '#2c3e50',
+            marginBottom: '20px',
             fontWeight: 'bold'
-          }}
-        >
-          {isRecording ? '🛑 Stop Recording' : '🎤 Start Recording'}
-        </button>
-        <div 
-          className="transcription-box" 
-          style={{ 
-            marginTop: '20px', 
-            padding: '20px', 
-            border: '1px solid #ccc', 
-            borderRadius: '10px',
-            minHeight: '200px', 
-            width: '80%', 
-            maxWidth: '800px',
-            backgroundColor: 'white', 
-            color: 'black',
-            whiteSpace: 'pre-wrap',
-            textAlign: 'left',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
-        >
-          <h2>Transcription:</h2>
-          <p style={{ lineHeight: '1.5' }}>{transcription}</p>
+          }}>AI Classroom Notes</h1>
+          <p style={{
+            fontSize: '1.1rem',
+            color: '#34495e',
+            maxWidth: '600px',
+            margin: '0 auto 30px'
+          }}>
+            Record your lectures and get real-time transcription with AI-powered summaries
+          </p>
+        </header>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '30px'
+        }}>
+          <button 
+            onClick={handleToggleRecording} 
+            disabled={isProcessing}
+            style={{ 
+              padding: '15px 30px',
+              fontSize: '1.2rem',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              backgroundColor: isProcessing ? '#cccccc' : (isRecording ? '#ff6b6b' : '#4cd964'),
+              border: 'none',
+              borderRadius: '50px',
+              color: 'white',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              opacity: isProcessing ? 0.7 : 1
+            }}
+          >
+            <span style={{ fontSize: '1.4rem' }}>
+              {isProcessing ? '⏳' : (isRecording ? '🛑' : '🎤')}
+            </span>
+            {isProcessing ? 'Processing...' : (isRecording ? 'Stop Recording' : 'Start Recording')}
+          </button>
         </div>
-      </header>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '30px',
+          margin: '0 auto',
+          maxWidth: '1200px'
+        }}>
+          {/* Live Transcription Box */}
+          <div style={{ 
+            backgroundColor: 'white',
+            borderRadius: '15px',
+            padding: '25px',
+            boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
+            minHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h2 style={{
+              color: '#2c3e50',
+              fontSize: '1.5rem',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <span>📝</span> Live Transcription
+              {isRecording && (
+                <span style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: '#4cd964',
+                  borderRadius: '50%',
+                  marginLeft: 'auto'
+                }}></span>
+              )}
+            </h2>
+            <div style={{
+              flex: 1,
+              backgroundColor: '#f8f9fa',
+              borderRadius: '10px',
+              padding: '20px',
+              fontSize: '1.1rem',
+              lineHeight: '1.6',
+              color: '#34495e',
+              overflowY: 'auto'
+            }}>
+              {transcription || 'Start recording to see live transcription...'}
+            </div>
+          </div>
+
+          {/* Summary Box */}
+          <div style={{ 
+            backgroundColor: 'white',
+            borderRadius: '15px',
+            padding: '25px',
+            boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
+            minHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h2 style={{
+              color: '#2c3e50',
+              fontSize: '1.5rem',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <span>✨</span> AI Summary
+            </h2>
+            <div style={{
+              flex: 1,
+              backgroundColor: '#f8f9fa',
+              borderRadius: '10px',
+              padding: '20px',
+              fontSize: '1.1rem',
+              lineHeight: '1.6',
+              color: '#34495e',
+              overflowY: 'auto'
+            }}>
+              {summary || 'Your lecture summary will appear here after recording...'}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
