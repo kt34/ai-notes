@@ -10,7 +10,7 @@ class Summarizer:
             return "No transcript provided to summarize."
             
         prompt = (
-            "Generate concise lecture notes from the following transcript:\n\n" + transcript
+            "Generate concise lecture notes from the following transcript, with detailed bullet points, and give some links if possible to references:\n\n" + transcript
         )
         try:
             response = self.client.chat.completions.create(

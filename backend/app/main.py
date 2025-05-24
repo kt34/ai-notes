@@ -53,7 +53,7 @@ async def websocket_transcribe(ws: WebSocket):
 
         summary = summarizer.summarize(transcript)
         
-        print("Summary: " + summary)
+        print("\n\nChatGPT Summary: " + summary)
 
         # Store in DB
         supabase.table("lectures").insert({
