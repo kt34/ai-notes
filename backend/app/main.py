@@ -40,8 +40,12 @@ async def websocket_transcribe(ws: WebSocket):
         full_transcript_parts.append(partial)
         await ws.send_text(json.dumps({"partial": partial}))
 
+    print(full_transcript_parts)
+
     # Assemble full transcript
     transcript = " ".join(full_transcript_parts)
+
+    print(transcript)
 
     # Summarize
     summary = await summarizer.summarize(transcript)
