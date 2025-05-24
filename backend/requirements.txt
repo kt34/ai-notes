@@ -2,6 +2,6 @@ fastapi
 uvicorn[standard]
 deepgram-sdk
 openai
-supabase-py
+supabase
 aioredis
 python-dotenv
