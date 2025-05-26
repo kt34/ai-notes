@@ -8,6 +8,7 @@ from .stt import STTClient
 from .summarizer import Summarizer
 from .db import supabase
 import asyncio
+# import time # time module was imported but not used in the previous robust version
 
 app = FastAPI()
 app.add_middleware(
@@ -25,86 +26,143 @@ async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
     full_transcript_parts = []
     
+    # This buffer was intended for reconstructing full transcript if needed,
+    # but full_transcript_parts should suffice. If audio_buffer_for_full_transcript
+    # has a specific purpose not covered by full_transcript_parts, it can be kept.
+    # For now, relying on full_transcript_parts.
+    # audio_buffer_for_full_transcript = [] 
+
     try:
-        audio_buffer = []
-
+        first_chunk_received = False # To differentiate timeout before vs. after audio starts
+        
         async def audio_gen():
-            """Buffer audio for full processing even if client disconnects"""
-            while True:
-                try:
-                    data = await asyncio.wait_for(ws.receive_bytes(), timeout=5)
-                    audio_buffer.append(data)
-                    yield {'buffer': data}
-                except (asyncio.TimeoutError, WebSocketDisconnect):
-                    # Send buffered audio to Deepgram
-                    for chunk in audio_buffer:
-                        yield {'buffer': chunk}
-                    return
+            nonlocal first_chunk_received 
+            try:
+                while True: # Loop until explicitly broken
+                    if ws.client_state != WebSocketState.CONNECTED:
+                        print("audio_gen: WebSocket no longer connected. Stopping.")
+                        break
+                    try:
+                        # Timeout to detect when client stops sending audio
+                        # or when client sends an empty byte string as an explicit end signal
+                        data = await asyncio.wait_for(ws.receive_bytes(), timeout=5.0) # Increased timeout slightly
+                        
+                        if not data: # Client explicitly sent empty bytes (0-length)
+                            print("audio_gen: Received empty bytes from client. Ending audio stream.")
+                            break
+                        
+                        first_chunk_received = True
+                        # audio_buffer_for_full_transcript.append(data) # If needed for other purposes
+                        yield {'buffer': data}
 
-        # Process audio stream
+                    except asyncio.TimeoutError:
+                        if first_chunk_received:
+                            print("audio_gen: Timeout after receiving audio. Assuming client stopped sending.")
+                            break # End of audio from client
+                        else:
+                            print("audio_gen: Timeout, no audio received yet. Client might be idle or setting up. Continuing to wait.")
+                            # Optionally, implement a max idle timeout here if desired
+                            continue 
+                    except WebSocketDisconnect:
+                        print("audio_gen: WebSocket disconnected during receive_bytes.")
+                        break # Exit generator
+                    except RuntimeError as e: # Handles cases like "Cannot call receive_bytes after connection is closed"
+                        if "after connection is closed" in str(e):
+                            print(f"audio_gen: WebSocket receive_bytes error after close: {e}")
+                        else:
+                            print(f"audio_gen: Runtime error during receive_bytes: {e}")
+                        break
+            finally:
+                print("audio_gen: Finished generating audio.")
+
+        # Process audio stream from STTClient
         async for partial in stt_client.stream_transcribe(audio_gen()):
+            if ws.client_state != WebSocketState.CONNECTED:
+                print("WebSocket disconnected while receiving partials. Breaking.")
+                break 
             full_transcript_parts.append(partial)
             try:
-                if ws.client_state == WebSocketState.CONNECTED:
-                    await ws.send_text(json.dumps({"partial": partial}))
-            except RuntimeError:
-                print("Could not send partial, connection might be closed")
+                await ws.send_text(json.dumps({"partial": partial}))
+            except Exception as send_err:
+                print(f"Error sending partial transcript: {send_err}. Client might have disconnected.")
+                break # Stop processing if we can't send to client
         
-        # Final processing
-        transcript = " ".join(full_transcript_parts)
-        if not transcript.strip():
-            print("No transcript generated")
-            return
+        print("Finished iterating stt_client.stream_transcribe.")
 
-        print("Transcript: " + transcript)
+        transcript = " ".join(full_transcript_parts).strip()
+        if not transcript:
+            transcript = "No speech detected in audio" if first_chunk_received else "Session ended prematurely or no audio sent."
+        
+        print("Full Transcript: " + transcript)
+
+        summary = "Summary could not be generated for this session." # Default summary
 
         try:
             # Generate summary
-            summary = summarizer.summarize(transcript)
+            summary = summarizer.summarize(transcript) # This can take time
             print("\nChatGPT Summary: " + summary)
 
             # Store in DB
-            supabase.table("lectures").insert({
-                "user_id": ws.query_params.get("user_id"),
-                "transcript": transcript,
-                "summary": summary
-            }).execute()
-            
-            # Ensure summary is sent if connection is still open
+            # Define conditions for not storing, e.g., very short or error messages
+            skippable_transcripts = [
+                "No speech detected in audio", 
+                "Session ended prematurely or no audio sent."
+            ]
+            # Also consider not storing if summary indicates an error.
+            if transcript.strip() and transcript not in skippable_transcripts and "Error generating summary" not in summary:
+                db_response = supabase.table("lectures").insert({
+                    "user_id": ws.query_params.get("user_id"),
+                    "transcript": transcript,
+                    "summary": summary
+                }).execute()
+                print(f"Data insertion response: {db_response}")
+            else:
+                print(f"Skipping DB insert for transcript: '{transcript}' or due to summary error.")
+
+            # Ensure summary and full transcript are sent if connection is still open
             if ws.client_state == WebSocketState.CONNECTED:
                 try:
                     await ws.send_text(json.dumps({
                         "summary": summary,
-                        "transcript": transcript  # Send both summary and full transcript
+                        "transcript": transcript 
                     }))
-                    print("Summary sent successfully")
+                    print("Summary and final transcript sent successfully.")
                 except Exception as e:
-                    print(f"Failed to send summary: {str(e)}")
+                    print(f"Failed to send summary/final transcript: {str(e)}")
             else:
-                print("Client disconnected, couldn't send summary")
+                print("Client disconnected, couldn't send summary/final transcript.")
 
         except Exception as e:
             print(f"Error in summary generation or database storage: {str(e)}")
+            # Try to send an error message to the client if still connected
             if ws.client_state == WebSocketState.CONNECTED:
-                await ws.send_text(json.dumps({
-                    "error": "Failed to generate summary"
-                }))
+                try:
+                    await ws.send_text(json.dumps({
+                        "error": "Failed to generate summary or store data.",
+                        "transcript": transcript # Send transcript even if summary fails
+                    }))
+                except Exception as send_err:
+                    print(f"Failed to send error message to client: {send_err}")
             
     except WebSocketDisconnect:
-        print("Client disconnected normally")
+        print(f"Client disconnected from FastAPI WebSocket: {ws.client_state}, {ws.application_state}")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Unhandled error in websocket_transcribe: {str(e)}")
         if ws.client_state == WebSocketState.CONNECTED:
-            await ws.send_text(json.dumps({
-                "error": str(e)
-            }))
+            try:
+                await ws.send_text(json.dumps({"error": f"An unexpected server error occurred: {str(e)}"}))
+            except Exception as send_err:
+                print(f"Error sending unhandled error to client: {send_err}")
     finally:
-        # Safely close connection if needed
-        try:
-            if (ws.application_state != WebSocketState.DISCONNECTED and 
-                ws.client_state != WebSocketState.DISCONNECTED):
-                print("Closing Connection Safely")
-                await ws.close(code=1000)
-        except RuntimeError as e:
-            if "Unexpected ASGI message" not in str(e):
-                raise
+        print("FastAPI WebSocket handler: Attempting to clean up WebSocket.")
+        if ws.client_state != WebSocketState.DISCONNECTED:
+            try:
+                await ws.close(code=1000) 
+                print("FastAPI WebSocket closed in finally block.")
+            except RuntimeError as e:
+                # Handle cases where close() is called on an already closing/closed socket
+                print(f"RuntimeError during WebSocket close: {e}. Connection state: {ws.client_state}")
+            except Exception as e:
+                print(f"Unexpected error during WebSocket close: {e}")
+        else:
+            print("FastAPI WebSocket already disconnected.")

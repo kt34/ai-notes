@@ -1,196 +1,252 @@
-import React, { useState, useRef } from 'react';
-import './App.css';
+import React, { useState, useRef, useEffect } from 'react';
+import './App.css'; // Assuming your App.css provides the necessary base styles
 
 function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [summary, setSummary] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const wavHeaderRef = useRef<ArrayBuffer | null>(null);
+
+  // Ref to hold the latest recording status for the audio processing callback
+  const isRecordingRef = useRef(isRecording);
 
   const userId = 'test_user';
   const backendUrl = `ws://localhost:8000/ws/transcribe?user_id=${userId}`;
 
-  // Function to create WAV header
-  const createWavHeader = (length: number): ArrayBuffer => {
-    const buffer = new ArrayBuffer(44);
-    const view = new DataView(buffer);
+  // Update the ref whenever the isRecording state changes
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  const cleanup = (isStoppingRecording = false) => {
+    console.log('Cleaning up resources...');
     
-    // RIFF identifier
-    writeString(view, 0, 'RIFF');
-    // File length
-    view.setUint32(4, length + 36, true);
-    // WAVE identifier
-    writeString(view, 8, 'WAVE');
-    // Format chunk identifier
-    writeString(view, 12, 'fmt ');
-    // Format chunk length
-    view.setUint32(16, 16, true);
-    // Sample format (raw)
-    view.setUint16(20, 1, true);
-    // Channel count
-    view.setUint16(22, 1, true);
-    // Sample rate
-    view.setUint32(24, 16000, true);
-    // Byte rate
-    view.setUint32(28, 16000 * 2, true);
-    // Block align
-    view.setUint16(32, 2, true);
-    // Bits per sample
-    view.setUint16(34, 16, true);
-    // Data chunk identifier
-    writeString(view, 36, 'data');
-    // Data chunk length
-    view.setUint32(40, length, true);
-
-    return buffer;
-  };
-
-  // Helper function to write strings to DataView
-  const writeString = (view: DataView, offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
-    }
-  };
-
-  const stopRecording = () => {
-    setIsProcessing(true); // Indicate we're waiting for summary
-    
-    // Stop audio processing
     if (processorRef.current) {
-      processorRef.current.disconnect();
+      try {
+        processorRef.current.disconnect();
+        processorRef.current.onaudioprocess = null; 
+      } catch (e) { console.log('Error disconnecting processor:', e); }
       processorRef.current = null;
     }
+
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      try {
+        if (audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
+        }
+      } catch (e) { console.log('Error closing audio context:', e); }
       audioContextRef.current = null;
     }
+
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      try {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      } catch (e) { console.log('Error stopping media stream:', e); }
       mediaStreamRef.current = null;
     }
-    
-    // Don't close WebSocket here - wait for summary
-    setIsRecording(false);
+
+    if (socketRef.current) {
+      if (!isStoppingRecording || (socketRef.current.readyState !== WebSocket.OPEN && socketRef.current.readyState !== WebSocket.CONNECTING)) {
+        try {
+          if (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING) {
+            console.log('Closing WebSocket connection in cleanup (forced)...');
+            socketRef.current.close(1000, "Client cleanup forced");
+          }
+        } catch (e) { console.log('Error closing WebSocket during forced cleanup:', e); }
+      } else if (isStoppingRecording && socketRef.current.readyState === WebSocket.OPEN) {
+        console.log("Cleanup called during stopRecording: WebSocket remains open for server's final messages.");
+      }
+      socketRef.current.onopen = null;
+      socketRef.current.onmessage = null;
+      socketRef.current.onerror = null;
+      socketRef.current.onclose = null;
+      if (!isStoppingRecording) {
+          socketRef.current = null;
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      // isRecordingRef.current = false; // Also update ref on unmount
+      setIsRecording(false); 
+      setIsProcessing(false);
+      cleanup(false); 
+    };
+  }, []); 
+
+  const stopRecording = () => {
+    if (!isRecordingRef.current) return; // Check ref here for immediate status
+
+    // setIsRecording(false); // State will be updated, ref is source of truth for audio callback
+    // isRecordingRef.current = false; // Already handled by useEffect based on setIsRecording
+    // The useEffect for isRecording will update isRecordingRef.current
+    // It's important that setIsRecording(false) is called to trigger that effect.
+    setIsRecording(false); // This will trigger the useEffect to update isRecordingRef.current
+
+    setIsProcessing(true); 
+    setTranscription(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
+
+    // Local audio capture stop (processorRef, etc. are handled by cleanup called when starting new recording)
+    // but good to disconnect processor here to stop onaudioprocess from firing with old state.
+    if (processorRef.current) {
+        processorRef.current.disconnect(); 
+        processorRef.current.onaudioprocess = null;
+    }
+    // mediaStream tracks are stopped in cleanup as well.
+
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      console.log("Client: Sending empty buffer to signal end of audio stream.");
+      socketRef.current.send(new ArrayBuffer(0));
+    }
   };
 
   const handleToggleRecording = async () => {
-    if (isRecording) {
+    // Use the ref for checking current recording state to avoid race conditions with state updates
+    if (isRecordingRef.current) {
       stopRecording();
       return;
     }
 
+    cleanup(false); 
+
+    setIsProcessing(false);
+    setSummary('');
+    setTranscription('🟡 Connecting to server...');
+    
     try {
-      setIsProcessing(false);
-      setSummary('');
-      
-      // Setup WebSocket first
       socketRef.current = new WebSocket(backendUrl);
+    } catch (error) {
+        console.error('Failed to create WebSocket:', error);
+        setTranscription(`🔴 Error: Could not establish connection. ${error instanceof Error ? error.message : String(error)}`);
+        cleanup(false);
+        return;
+    }
       
-      socketRef.current.onopen = async () => {
-        console.log('WebSocket connected, starting audio capture...');
-        
-        // Get audio stream
+    socketRef.current.onopen = async () => {
+      console.log('WebSocket connected, starting audio capture...');
+      setTranscription('🎤 Initializing microphone...');
+      
+      try {
         mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({ 
-          audio: { 
-            channelCount: 1,
-            sampleRate: 16000,
-            echoCancellation: true,
-            noiseSuppression: true
-          } 
+          audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true } 
         });
 
-        // Setup audio processing
+        // Ensure AudioContext is resumed if it's suspended (common browser policy)
+        if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+            await audioContextRef.current.resume();
+        }
         audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+        // After creating a new context, resume it if necessary (though getUserMedia usually does this)
+        if (audioContextRef.current.state === 'suspended') {
+            await audioContextRef.current.resume();
+            console.log("AudioContext resumed.");
+        }
+
         const source = audioContextRef.current.createMediaStreamSource(mediaStreamRef.current);
-        
-        // Create processor to handle raw audio data
-        processorRef.current = audioContextRef.current.createScriptProcessor(1024, 1, 1);
+        const bufferSize = 4096; 
+        processorRef.current = audioContextRef.current.createScriptProcessor(bufferSize, 1, 1);
         
         processorRef.current.onaudioprocess = (e) => {
-          if (socketRef.current?.readyState === WebSocket.OPEN) {
-            // Get raw audio data
+          // console.log("onaudioprocess | isRecordingRef.current:", isRecordingRef.current, "socket state:", socketRef.current?.readyState);
+          if (socketRef.current?.readyState === WebSocket.OPEN && isRecordingRef.current) { 
             const inputData = e.inputBuffer.getChannelData(0);
-            
-            // Convert to 16-bit PCM
             const pcmData = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
-              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+              let s = Math.max(-1, Math.min(1, inputData[i]));
+              pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF; 
             }
-
-            // Create WAV chunk
-            const wavHeader = createWavHeader(pcmData.byteLength);
-            const wavData = new Uint8Array(wavHeader.byteLength + pcmData.byteLength);
-            wavData.set(new Uint8Array(wavHeader), 0);
-            wavData.set(new Uint8Array(pcmData.buffer), wavHeader.byteLength);
-            
-            // Send as binary WAV data
-            socketRef.current.send(wavData.buffer);
+            socketRef.current.send(pcmData.buffer);
           }
         };
 
-        // Connect the nodes
         source.connect(processorRef.current);
-        processorRef.current.connect(audioContextRef.current.destination);
+        processorRef.current.connect(audioContextRef.current.destination); 
         
-        setIsRecording(true);
-        setTranscription('Connected. Start speaking...');
-      };
+        // Set isRecording to true. The useEffect will update isRecordingRef.current.
+        setIsRecording(true); 
+        setTranscription('🟢 Connected. Start speaking...');
 
-      socketRef.current.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        if (message.partial) {
-          setTranscription(prev => {
-            const parts = prev.split(' ');
-            const newParts = [...parts.slice(-20), message.partial];
-            return newParts.join(' ');
-          });
-        } else if (message.summary) {
-          setSummary(message.summary);
-          if (message.transcript) {
-            setTranscription(message.transcript);
+      } catch (error) {
+        console.error('Error setting up audio:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        setTranscription(`🔴 Error: Could not access microphone. ${errorMessage}`);
+        setIsRecording(false); // This will also update isRecordingRef.current via useEffect
+        cleanup(false); 
+      }
+    };
+
+    socketRef.current.onmessage = (event) => { /* ... (same as before) ... */ 
+        try {
+            const message = JSON.parse(event.data as string);
+            if (message.partial) {
+              if (isRecordingRef.current && !isProcessing) { 
+                setTranscription(prev => { /* ... (same rolling transcription logic) ... */ 
+                    const cleanedPrev = (
+                        prev === '🟢 Connected. Start speaking...' || 
+                        prev.startsWith('🎤 Initializing microphone...') || 
+                        prev.startsWith('🟡 Connecting to server...') ||
+                        prev.includes("⏹️ Recording stopped.") 
+                        ) ? '' : prev.split("\n\n⏹️ Recording stopped.")[0];
+        
+                      const prevWords = cleanedPrev.trim().split(/\s+/).filter(Boolean);
+                      const newPartialWords = message.partial.trim().split(/\s+/).filter(Boolean);
+                      
+                      const MAX_LIVE_WORDS = 40; 
+                      const combinedWords = [...prevWords, ...newPartialWords];
+                      const startIndex = Math.max(0, combinedWords.length - MAX_LIVE_WORDS);
+                      return combinedWords.slice(startIndex).join(' ');
+                });
+              }
+            } else if (message.summary || message.transcript) { 
+              if (message.summary) setSummary(message.summary);
+              if (message.transcript) setTranscription(message.transcript);
+              else if (!message.summary) { 
+                 setTranscription(message.transcript || "Transcript received, summary missing.");
+              }
+              setIsProcessing(false); 
+              setIsRecording(false); // Ensure recording state is fully stopped
+            } else if (message.error) {
+              console.error('Received error from server:', message.error);
+              setSummary(`Server Error: ${message.error}`);
+              setTranscription(prev => `${prev}\n🔴 An error occurred on the server: ${message.error}. Please try again.`);
+              setIsProcessing(false);
+              setIsRecording(false); 
+            }
+          } catch (e) {
+              console.error("Error processing message from server:", e, "Raw data:", event.data);
+              setTranscription(prev => prev + "\n🔴 Error: Received malformed message from server.");
+              setIsProcessing(false);
+              setIsRecording(false);
           }
-          setIsProcessing(false);
-          // Now we can safely close the WebSocket
-          if (socketRef.current) {
-            socketRef.current.close();
-            socketRef.current = null;
-          }
-        } else if (message.error) {
-          setSummary(`Error: ${message.error}`);
-          setTranscription('An error occurred during processing. Please try again.');
-          setIsProcessing(false);
-          if (socketRef.current) {
-            socketRef.current.close();
-            socketRef.current = null;
-          }
+    };
+    socketRef.current.onerror = (errorEvent) => { /* ... (same as before) ... */ 
+        console.error('WebSocket error:', errorEvent);
+        setTranscription(prev => prev + '\n🔴 Error: Connection to server failed or was lost unexpectedly.');
+        setSummary(''); 
+        setIsRecording(false);
+        setIsProcessing(false);
+        cleanup(false); 
+    };
+    socketRef.current.onclose = (event) => { /* ... (same as before, ensure socketRef.current = null;) ... */
+        console.log('WebSocket closed:', event.code, event.reason, "Was Clean:", event.wasClean);
+        if (isProcessing) { 
+            setTranscription(prev => prev + "\n⚪️ Connection closed. Summary may not have been received.");
+        } else if (isRecordingRef.current) { // Check ref as state might be lagging
+            setTranscription(prev => prev + "\n⚪️ Connection closed unexpectedly during recording.");
         }
-      };
-
-      socketRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setIsProcessing(false);
-        stopRecording();
-        setTranscription('Error: Connection failed');
-      };
-
-      socketRef.current.onclose = () => {
-        console.log('WebSocket closed');
-        setIsProcessing(false);
-      };
-
-    } catch (error) {
-      console.error('Setup error:', error);
-      setIsProcessing(false);
-      stopRecording();
-      setTranscription('Error: Could not access microphone');
-    }
+        setIsRecording(false); // Final state update
+        setIsProcessing(false); 
+        socketRef.current = null; 
+    };
   };
 
+  // UI Rendering (same as before)
   return (
     <div className="App" style={{ 
       minHeight: '100vh',
@@ -201,144 +257,71 @@ function App() {
         margin: '0 auto',
         padding: '40px 20px'
       }}>
-        <header style={{
-          textAlign: 'center',
-          marginBottom: '40px'
-        }}>
-          <h1 style={{
-            fontSize: '2.5rem',
-            color: '#2c3e50',
-            marginBottom: '20px',
-            fontWeight: 'bold'
-          }}>AI Classroom Notes</h1>
-          <p style={{
-            fontSize: '1.1rem',
-            color: '#34495e',
-            maxWidth: '600px',
-            margin: '0 auto 30px'
-          }}>
-            Record your lectures and get real-time transcription with AI-powered summaries
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.8rem)', color: '#2c3e50', marginBottom: '20px', fontWeight: 'bold' }}>AI Classroom Notes</h1>
+          <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', color: '#34495e', maxWidth: '600px', margin: '0 auto 30px' }}>
+            Record your lectures and get real-time transcription with AI-powered summaries.
           </p>
         </header>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          marginBottom: '30px'
-        }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
           <button 
             onClick={handleToggleRecording} 
-            disabled={isProcessing}
+            disabled={isProcessing && !isRecordingRef.current} // Use ref for disabled state if processing summary
             style={{ 
               padding: '15px 30px',
               fontSize: '1.2rem',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
-              backgroundColor: isProcessing ? '#cccccc' : (isRecording ? '#ff6b6b' : '#4cd964'),
+              cursor: (isProcessing && !isRecordingRef.current) ? 'not-allowed' : 'pointer',
+              backgroundColor: (isProcessing && !isRecordingRef.current) ? '#bdc3c7' : (isRecordingRef.current ? '#e74c3c' : '#2ecc71'),
               border: 'none',
               borderRadius: '50px',
               color: 'white',
               fontWeight: 'bold',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              opacity: isProcessing ? 0.7 : 1
+              opacity: (isProcessing && !isRecordingRef.current) ? 0.7 : 1
             }}
           >
             <span style={{ fontSize: '1.4rem' }}>
-              {isProcessing ? '⏳' : (isRecording ? '🛑' : '🎤')}
+              {(isProcessing && !isRecordingRef.current) ? '⏳' : (isRecordingRef.current ? '🛑' : '🎤')}
             </span>
-            {isProcessing ? 'Processing...' : (isRecording ? 'Stop Recording' : 'Start Recording')}
+            {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? 'Stop Recording' : 'Start Recording')}
           </button>
         </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '30px',
-          margin: '0 auto',
-          maxWidth: '1200px'
-        }}>
-          {/* Live Transcription Box */}
-          <div style={{ 
-            backgroundColor: 'white',
-            borderRadius: '15px',
-            padding: '25px',
-            boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
-            minHeight: '300px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <h2 style={{
-              color: '#2c3e50',
-              fontSize: '1.5rem',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '15px', padding: '25px', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+            <h2 style={{ color: '#2c3e50', fontSize: '1.5rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>📝</span> Live Transcription
-              {isRecording && (
-                <span style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: '#4cd964',
-                  borderRadius: '50%',
-                  marginLeft: 'auto'
-                }}></span>
+              {isRecordingRef.current && ( // Use ref for UI indicator
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#2ecc71', borderRadius: '50%', marginLeft: 'auto', animation: 'pulseAnimation 1.5s infinite ease-in-out' }}></span>
               )}
             </h2>
-            <div style={{
-              flex: 1,
-              backgroundColor: '#f8f9fa',
-              borderRadius: '10px',
-              padding: '20px',
-              fontSize: '1.1rem',
-              lineHeight: '1.6',
-              color: '#34495e',
-              overflowY: 'auto'
-            }}>
-              {transcription || 'Start recording to see live transcription...'}
+            <div style={{ flex: 1, backgroundColor: '#f8f9fa', borderRadius: '10px', padding: '20px', fontSize: '1rem', lineHeight: '1.6', color: '#34495e', overflowY: 'auto', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+              {transcription || (isProcessing && !isRecordingRef.current ? '⏳ Waiting for final transcript and summary...' : 'Start recording to see live transcription...')}
             </div>
           </div>
 
-          {/* Summary Box */}
-          <div style={{ 
-            backgroundColor: 'white',
-            borderRadius: '15px',
-            padding: '25px',
-            boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
-            minHeight: '300px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <h2 style={{
-              color: '#2c3e50',
-              fontSize: '1.5rem',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '15px', padding: '25px', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+            <h2 style={{ color: '#2c3e50', fontSize: '1.5rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span>✨</span> AI Summary
             </h2>
-            <div style={{
-              flex: 1,
-              backgroundColor: '#f8f9fa',
-              borderRadius: '10px',
-              padding: '20px',
-              fontSize: '1.1rem',
-              lineHeight: '1.6',
-              color: '#34495e',
-              overflowY: 'auto'
-            }}>
-              {summary || 'Your lecture summary will appear here after recording...'}
+            <div style={{ flex: 1, backgroundColor: '#f8f9fa', borderRadius: '10px', padding: '20px', fontSize: '1rem', lineHeight: '1.6', color: '#34495e', overflowY: 'auto', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+              {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
             </div>
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes pulseAnimation {
+          0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+          70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+          100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+      `}</style>
     </div>
   );
 }

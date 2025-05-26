@@ -17,3 +17,6 @@ dist/
 
 # Ignore venv
 venv/
+
+# Ignore dump project.sh
+dump_project.sh
