@@ -12,7 +12,7 @@ def get_user_lectures(user_id: str):
     response = supabase.table("lectures") \
         .select("*") \
         .eq("user_id", user_id) \
-        .order("created_at", desc=True) \
+        .order("inserted_at", desc=True) \
         .execute()
     
     return response.data

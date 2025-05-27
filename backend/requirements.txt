@@ -12,6 +12,8 @@ dataclasses-json==0.6.7
 deepgram-sdk==4.1.0
 deprecation==2.1.0
 distro==1.9.0
+dnspython==2.7.0
+email_validator==2.2.0
 fastapi==0.110.1
 frozenlist==1.6.0
 gotrue==2.12.0

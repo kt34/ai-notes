@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from starlette.websockets import WebSocketDisconnect
@@ -7,8 +7,10 @@ from .config import settings
 from .stt import STTClient
 from .summarizer import Summarizer
 from .db import supabase
+from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user
 import asyncio
 # import time # time module was imported but not used in the previous robust version
+from uuid import UUID
 
 app = FastAPI()
 app.add_middleware(
@@ -21,18 +23,54 @@ app.add_middleware(
 stt_client = STTClient(settings.DEEPGRAM_API_KEY)
 summarizer = Summarizer(settings.OPENAI_API_KEY)
 
+# Auth endpoints
+@app.post("/auth/register")
+async def register(user_data: UserCreate):
+    try:
+        return await register_user(user_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/auth/login")
+async def login(user_data: UserLogin):
+    try:
+        return await login_user(user_data)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+@app.post("/auth/logout")
+async def logout():
+    try:
+        return logout_user()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/auth/me")
+async def get_me():
+    try:
+        return get_current_user()
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
     full_transcript_parts = []
     
-    # This buffer was intended for reconstructing full transcript if needed,
-    # but full_transcript_parts should suffice. If audio_buffer_for_full_transcript
-    # has a specific purpose not covered by full_transcript_parts, it can be kept.
-    # For now, relying on full_transcript_parts.
-    # audio_buffer_for_full_transcript = [] 
-
     try:
+        # Get user_id from query params and verify it exists in auth
+        user_id = ws.query_params.get("user_id")
+        if not user_id:
+            raise WebSocketDisconnect(code=4001, reason="No user_id provided")
+            
+        # Verify user_id is a valid UUID
+        try:
+            user_id = str(UUID(user_id))  # This will raise ValueError if not valid UUID
+        except ValueError:
+            raise WebSocketDisconnect(code=4002, reason="Invalid user_id format")
+        
+        audio_buffer = []
+        
         first_chunk_received = False # To differentiate timeout before vs. after audio starts
         
         async def audio_gen():
