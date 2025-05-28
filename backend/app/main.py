@@ -57,7 +57,20 @@ async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
     full_transcript_parts = []
     
-    try:        
+    try:
+
+        token = ws.query_params.get("token")
+        if not token:
+            raise WebSocketException(code=4001, reason="Missing authentication token")
+
+        user_response = supabase.auth.get_user(token)
+        if not user_response or not user_response.user:
+            raise WebSocketException(code=4001, reason="Invalid authentication token")
+
+        user_id = user_response.user.id
+
+        print("THe USER ID IS " + str(user_id))
+        
         audio_buffer = []
         
         first_chunk_received = False # To differentiate timeout before vs. after audio starts
@@ -138,7 +151,7 @@ async def websocket_transcribe(ws: WebSocket):
             # Also consider not storing if summary indicates an error.
             if transcript.strip() and transcript not in skippable_transcripts and "Error generating summary" not in summary:
                 db_response = supabase.table("lectures").insert({
-                    "user_id": ws.query_params.get("user_id"),
+                    "user_id": user_id,
                     "transcript": transcript,
                     "summary": summary
                 }).execute()

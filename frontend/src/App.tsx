@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useAuth } from './contexts/AuthContext';
+import { LoginForm } from './components/auth/LoginForm';
+import { RegisterForm } from './components/auth/RegisterForm';
 import './App.css'; // Assuming your App.css provides the necessary base styles
 
-function App() {
+function RecordingApp() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [summary, setSummary] = useState('');
@@ -15,8 +18,8 @@ function App() {
   // Ref to hold the latest recording status for the audio processing callback
   const isRecordingRef = useRef(isRecording);
 
-  const userId = '06eb0cea-6b1e-4737-a17d-ab4fe9b382c2';
-  const backendUrl = `ws://localhost:8000/ws/transcribe?user_id=${userId}`;
+  const { token } = useAuth();
+  const backendUrl = `ws://localhost:8000/ws/transcribe?token=${token}`;
 
   // Update the ref whenever the isRecording state changes
   useEffect(() => {
@@ -317,6 +320,58 @@ function App() {
         }
       `}</style>
       </div>
+  );
+}
+
+function App() {
+  const { user, isLoading, logout } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="auth-container">
+        {showRegister ? <RegisterForm /> : <LoginForm />}
+        <button 
+          onClick={() => setShowRegister(!showRegister)}
+          className="toggle-auth-btn"
+        >
+          {showRegister ? 'Already have an account? Login' : 'Need an account? Register'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <nav style={{ 
+        padding: '1rem', 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#f8f9fa',
+        marginBottom: '2rem'
+      }}>
+        <div>Welcome, {user.email}</div>
+        <button 
+          onClick={logout}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Logout
+        </button>
+      </nav>
+      <RecordingApp />
+    </div>
   );
 }
 
