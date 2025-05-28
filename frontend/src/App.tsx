@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './App.css'; // Assuming your App.css provides the necessary base styles
 
 function App() {
