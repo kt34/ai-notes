@@ -19,13 +19,14 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
-      <h2>Register</h2>
+      <h2>Create Account</h2>
       {error && <div className="error-message">{error}</div>}
       <div className="form-group">
-        <label htmlFor="fullName">Full Name:</label>
+        <label htmlFor="fullName">Full Name</label>
         <input
           type="text"
           id="fullName"
+          placeholder="Enter your full name"
           value={fullName}
           onChange={(e) => {
             setFullName(e.target.value);
@@ -34,10 +35,11 @@ export function RegisterForm() {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="email">Email:</label>
+        <label htmlFor="email">Email</label>
         <input
           type="email"
           id="email"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -47,10 +49,11 @@ export function RegisterForm() {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="password">Password:</label>
+        <label htmlFor="password">Password</label>
         <input
           type="password"
           id="password"
+          placeholder="Choose a strong password"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
@@ -59,7 +62,7 @@ export function RegisterForm() {
           required
         />
       </div>
-      <button type="submit">Register</button>
+      <button type="submit">Create Account</button>
     </form>
   );
 } 

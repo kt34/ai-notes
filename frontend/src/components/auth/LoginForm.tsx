@@ -18,13 +18,14 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="auth-form">
-      <h2>Login</h2>
+      <h2>Welcome Back</h2>
       {error && <div className="error-message">{error}</div>}
       <div className="form-group">
-        <label htmlFor="email">Email:</label>
+        <label htmlFor="email">Email</label>
         <input
           type="email"
           id="email"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -34,10 +35,11 @@ export function LoginForm() {
         />
       </div>
       <div className="form-group">
-        <label htmlFor="password">Password:</label>
+        <label htmlFor="password">Password</label>
         <input
           type="password"
           id="password"
+          placeholder="Enter your password"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
@@ -46,7 +48,7 @@ export function LoginForm() {
           required
         />
       </div>
-      <button type="submit">Login</button>
+      <button type="submit">Sign In</button>
     </form>
   );
 } 

@@ -245,41 +245,57 @@ function RecordingApp() {
 
   // UI Rendering (same as before)
   return (
-    <div className="App" style={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
-    }}>
-      <div style={{
+    <div className="main-content">
+      <div style={{ 
         maxWidth: '1200px',
         margin: '0 auto',
-        padding: '40px 20px'
+        padding: '20px'
       }}>
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.8rem)', color: '#2c3e50', marginBottom: '20px', fontWeight: 'bold' }}>AI Classroom Notes</h1>
-          <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', color: '#34495e', maxWidth: '600px', margin: '0 auto 30px' }}>
-            Record your lectures and get real-time transcription with AI-powered summaries.
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '40px'
+        }}>
+          <h1 style={{ 
+            fontSize: 'clamp(2rem, 5vw, 2.8rem)', 
+            color: '#fff',
+            marginBottom: '20px', 
+            fontWeight: 'bold'
+          }}>notez.ai</h1>
+          <p style={{ 
+            fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', 
+            color: 'rgba(255, 255, 255, 0.6)', 
+            maxWidth: '600px', 
+            margin: '0 auto 30px' 
+          }}>
+            Smart lecture notes powered by AI
           </p>
-        </header>
+        </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          marginBottom: '30px' 
+        }}>
           <button 
             onClick={handleToggleRecording} 
-            disabled={isProcessing && !isRecordingRef.current} // Use ref for disabled state if processing summary
+            disabled={isProcessing && !isRecordingRef.current}
+            className="record-button"
             style={{ 
               padding: '15px 30px',
               fontSize: '1.2rem',
               cursor: (isProcessing && !isRecordingRef.current) ? 'not-allowed' : 'pointer',
-              backgroundColor: (isProcessing && !isRecordingRef.current) ? '#bdc3c7' : (isRecordingRef.current ? '#e74c3c' : '#2ecc71'),
+              backgroundColor: (isProcessing && !isRecordingRef.current) ? 'rgba(255, 255, 255, 0.1)' : (isRecordingRef.current ? '#ef4444' : '#646cff'),
               border: 'none',
               borderRadius: '50px',
-              color: 'white',
+              color: '#fff',
               fontWeight: 'bold',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              opacity: (isProcessing && !isRecordingRef.current) ? 0.7 : 1
+              opacity: (isProcessing && !isRecordingRef.current) ? 0.7 : 1,
+              transform: (isProcessing && !isRecordingRef.current) ? 'none' : 'translateY(0)'
             }}
           >
             <span style={{ fontSize: '1.4rem' }}>
@@ -289,37 +305,109 @@ function RecordingApp() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '15px', padding: '25px', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
-            <h2 style={{ color: '#2c3e50', fontSize: '1.5rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '30px' 
+        }}>
+          <div style={{ 
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '16px',
+            padding: '25px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            minHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h2 style={{ 
+              color: '#fff',
+              fontSize: '1.5rem',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
               <span>📝</span> Live Transcription
-              {isRecordingRef.current && ( // Use ref for UI indicator
-                <span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#2ecc71', borderRadius: '50%', marginLeft: 'auto', animation: 'pulseAnimation 1.5s infinite ease-in-out' }}></span>
+              {isRecordingRef.current && (
+                <span style={{ 
+                  display: 'inline-block',
+                  width: '12px',
+                  height: '12px',
+                  backgroundColor: '#646cff',
+                  borderRadius: '50%',
+                  marginLeft: 'auto',
+                  animation: 'pulseAnimation 1.5s infinite ease-in-out'
+                }}></span>
               )}
             </h2>
-            <div style={{ flex: 1, backgroundColor: '#f8f9fa', borderRadius: '10px', padding: '20px', fontSize: '1rem', lineHeight: '1.6', color: '#34495e', overflowY: 'auto', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+            <div style={{ 
+              flex: 1,
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '10px',
+              padding: '20px',
+              fontSize: '1rem',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.8)',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
+            }}>
               {transcription || (isProcessing && !isRecordingRef.current ? '⏳ Waiting for final transcript and summary...' : 'Start recording to see live transcription...')}
             </div>
           </div>
 
-          <div style={{ backgroundColor: 'white', borderRadius: '15px', padding: '25px', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
-            <h2 style={{ color: '#2c3e50', fontSize: '1.5rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ 
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '16px',
+            padding: '25px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            minHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h2 style={{ 
+              color: '#fff',
+              fontSize: '1.5rem',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
               <span>✨</span> AI Summary
             </h2>
-            <div style={{ flex: 1, backgroundColor: '#f8f9fa', borderRadius: '10px', padding: '20px', fontSize: '1rem', lineHeight: '1.6', color: '#34495e', overflowY: 'auto', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+            <div style={{ 
+              flex: 1,
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '10px',
+              padding: '20px',
+              fontSize: '1rem',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.8)',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
+            }}>
               {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
             </div>
           </div>
         </div>
       </div>
       <style>{`
+        .record-button:not(:disabled):hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4) !important;
+        }
         @keyframes pulseAnimation {
-          0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
-          70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-          100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+          0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(100, 108, 255, 0.7); }
+          70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(100, 108, 255, 0); }
+          100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(100, 108, 255, 0); }
         }
       `}</style>
-      </div>
+    </div>
   );
 }
 
@@ -328,12 +416,27 @@ function App() {
   const [showRegister, setShowRegister] = useState(false);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontSize: '1.2rem'
+      }}>
+        Loading...
+      </div>
+    );
   }
 
   if (!user) {
     return (
       <div className="auth-container">
+        <div className="auth-logo">
+          <h1>notez.ai</h1>
+          <p>Smart lecture notes powered by AI</p>
+        </div>
         {showRegister ? <RegisterForm /> : <LoginForm />}
         <button 
           onClick={() => setShowRegister(!showRegister)}
@@ -346,32 +449,20 @@ function App() {
   }
 
   return (
-    <div>
-      <nav style={{ 
-        padding: '1rem', 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#f8f9fa',
-        marginBottom: '2rem'
-      }}>
-        <div>Welcome, {user.email}</div>
-        <button 
-          onClick={logout}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Logout
-        </button>
+    <>
+      <nav className="nav-bar">
+        <div className="nav-brand">
+          notez.ai
+        </div>
+        <div className="nav-user">
+          <span>{user.email}</span>
+          <button onClick={logout} className="logout-btn">
+            Logout
+          </button>
+        </div>
       </nav>
       <RecordingApp />
-    </div>
+    </>
   );
 }
 
