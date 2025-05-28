@@ -57,18 +57,7 @@ async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
     full_transcript_parts = []
     
-    try:
-        # Get user_id from query params and verify it exists in auth
-        user_id = ws.query_params.get("user_id")
-        if not user_id:
-            raise WebSocketDisconnect(code=4001, reason="No user_id provided")
-            
-        # Verify user_id is a valid UUID
-        try:
-            user_id = str(UUID(user_id))  # This will raise ValueError if not valid UUID
-        except ValueError:
-            raise WebSocketDisconnect(code=4002, reason="Invalid user_id format")
-        
+    try:        
         audio_buffer = []
         
         first_chunk_received = False # To differentiate timeout before vs. after audio starts
