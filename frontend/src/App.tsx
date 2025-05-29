@@ -7,6 +7,8 @@ import './App.css'; // Assuming your App.css provides the necessary base styles
 function RecordingApp() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
+  const [completedTranscriptSegments, setCompletedTranscriptSegments] = useState<string[]>([]);
+  const [currentInterimTranscript, setCurrentInterimTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -25,6 +27,12 @@ function RecordingApp() {
   useEffect(() => {
     console.log('🔄 Recording state changed:', isRecording);
     isRecordingRef.current = isRecording;
+    if (isRecording) {
+      // Reset transcript states when starting a new recording
+      setCompletedTranscriptSegments([]);
+      setCurrentInterimTranscript('');
+      setTranscription('🟢 Connected. Start speaking...');
+    }
   }, [isRecording]);
 
   const cleanup = (isStoppingRecording = false) => {
@@ -83,6 +91,8 @@ function RecordingApp() {
   useEffect(() => {
     return () => {
       console.log('🔄 Component unmounting...');
+      // Explicitly set isRecording to false to ensure its ref is updated
+      // This helps prevent race conditions if cleanup is called from unmount
       setIsRecording(false); 
       setIsProcessing(false);
       cleanup(false); 
@@ -99,6 +109,8 @@ function RecordingApp() {
     setIsRecording(false);
     setIsProcessing(true); 
     setTranscription(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
+    // Final interim might be useful, but summary message will overwrite
+    // setCurrentInterimTranscript(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
 
     if (processorRef.current) {
         console.log('📝 Disconnecting audio processor...');
@@ -122,6 +134,8 @@ function RecordingApp() {
     cleanup(false); 
     setIsProcessing(false);
     setSummary('');
+    setCompletedTranscriptSegments([]);
+    setCurrentInterimTranscript('');
     setTranscription('🟡 Connecting to server...');
     
     try {
@@ -176,7 +190,8 @@ function RecordingApp() {
         
         console.log('✅ Audio setup complete, starting recording...');
         setIsRecording(true); 
-        setTranscription('🟢 Connected. Start speaking...');
+        // Initial transcription message moved to isRecording useEffect for clarity
+        // setTranscription('🟢 Connected. Start speaking...');
 
       } catch (error) {
         console.error('❌ Audio setup failed:', error);
@@ -192,34 +207,32 @@ function RecordingApp() {
             console.log('📥 Received WebSocket message');
             const message = JSON.parse(event.data as string);
             
-            if (message.partial) {
-              console.log('📝 Received partial transcription');
-              if (isRecordingRef.current && !isProcessing) { 
-                setTranscription(prev => {
-                    const cleanedPrev = (
-                        prev === '🟢 Connected. Start speaking...' || 
-                        prev.startsWith('🎤 Initializing microphone...') || 
-                        prev.startsWith('🟡 Connecting to server...') ||
-                        prev.includes("⏹️ Recording stopped.") 
-                        ) ? '' : prev.split("\n\n⏹️ Recording stopped.")[0];
-        
-                      const prevWords = cleanedPrev.trim().split(/\s+/).filter(Boolean);
-                      const newPartialWords = message.partial.trim().split(/\s+/).filter(Boolean);
-                      
-                      const MAX_LIVE_WORDS = 40; 
-                      const combinedWords = [...prevWords, ...newPartialWords].slice(-MAX_LIVE_WORDS);
-                      return combinedWords.join(' ');
-                });
+            if (message.text !== undefined && message.is_final_utterance_segment !== undefined) {
+              console.log('📝 Received transcription segment:', message.text, 'is_final:', message.is_final_utterance_segment);
+              if (isRecordingRef.current && !isProcessing) {
+                if (message.is_final_utterance_segment) {
+                  setCompletedTranscriptSegments(prev => [...prev, message.text]);
+                  setCurrentInterimTranscript('');
+                } else {
+                  setCurrentInterimTranscript(message.text);
+                }
               }
             } else if (message.summary) {
                 console.log('📋 Received final summary');
                 setIsProcessing(false);
                 setSummary(message.summary);
-                setTranscription(message.transcript || transcription);
+                // When final summary arrives, display the full final transcript
+                // and clear the live-building parts
+                setTranscription(message.transcript || completedTranscriptSegments.join(' ') + (currentInterimTranscript ? ' ' + currentInterimTranscript : ''));
+                setCompletedTranscriptSegments([]); // Clear for next potential recording session (though usually handled by start)
+                setCurrentInterimTranscript('');   // Clear for next potential recording session
             } else if (message.error) {
                 console.error('❌ Received error from server:', message.error);
                 setIsProcessing(false);
                 setTranscription(prev => `${prev}\n\n❌ Error: ${message.error}`);
+            } else if (message.partial) { // Fallback for old message format, though should not happen with new backend
+              console.warn('Received old "partial" message format. Updating current interim.');
+              setCurrentInterimTranscript(message.partial);
             }
         } catch (error) {
             console.error('❌ Error processing WebSocket message:', error);
@@ -235,13 +248,44 @@ function RecordingApp() {
 
     socketRef.current.onclose = (event) => {
         console.log('🔌 WebSocket closed:', event.code, event.reason);
-        if (isRecordingRef.current) {
+        if (isRecordingRef.current) { // If it closes while we thought we were recording
             setTranscription(prev => `${prev}\n\n⚠️ Connection closed unexpectedly. Code: ${event.code}`);
-            setIsRecording(false);
-            cleanup(false);
+            setIsRecording(false); // Update state to reflect closure
+            // No setIsProcessing(true) here, as the process was interrupted
+            cleanup(false); // Perform full cleanup
+        } else if (isProcessing) { // If it closes while we were expecting summary
+             setTranscription(prev => `${prev}\n\n⚠️ Connection closed while processing. Code: ${event.code}`);
+             setIsProcessing(false);
+             // No cleanup here if stopRecording already initiated it partially for the socket.
         }
     };
   };
+
+  // Effect to update the main transcription display from segments
+  useEffect(() => {
+    if (isRecordingRef.current && !isProcessing) { // Only update live if actively recording and not processing final
+      const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
+      // Ensure initial messages are not prepended once actual transcription starts
+      if (liveDisplay || currentInterimTranscript) { // If there's any text from STT
+          setTranscription(liveDisplay);
+      } else if (isRecordingRef.current && transcription !== '🟢 Connected. Start speaking...' && transcription !== '🎤 Initializing microphone...' && transcription !== '🟡 Connecting to server...') {
+          // If recording just started and no text yet, but an old message is there, clear it to 'Listening...'
+          // Or, if it's one of the initial messages, let it be.
+          if (transcription === '🟢 Connected. Start speaking...' || transcription === '🎤 Initializing microphone...' || transcription === '🟡 Connecting to server...') {
+            // Keep these initial messages until first text arrives
+          } else {
+            setTranscription('🎤 Listening...');
+          }
+      }
+    } else if (!isRecordingRef.current && !isProcessing && !summary) { // Not recording, not processing, no summary yet
+        // If there's any lingering text after stopping but before summary, show it
+        const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
+        if (lastKnownText && !transcription.includes("⏹️ Recording stopped.")) { // Don't overwrite "stopped" message
+            setTranscription(lastKnownText);
+        }
+    }
+  }, [completedTranscriptSegments, currentInterimTranscript, isProcessing, summary, transcription]); // Added transcription to dependencies for the initial message check
+
 
   // UI Rendering (same as before)
   return (

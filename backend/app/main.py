@@ -55,7 +55,6 @@ async def get_me():
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
-    full_transcript_parts = []
     
     try:
 
@@ -69,8 +68,9 @@ async def websocket_transcribe(ws: WebSocket):
 
         user_id = user_response.user.id
 
-        print("THe USER ID IS " + str(user_id))
+        print(f"User {user_id} connected for transcription.")
         
+        # audio_buffer_for_full_transcript was not used, removed
         audio_buffer = []
         
         first_chunk_received = False # To differentiate timeout before vs. after audio starts
@@ -115,25 +115,59 @@ async def websocket_transcribe(ws: WebSocket):
             finally:
                 print("audio_gen: Finished generating audio.")
 
+        final_transcript_segments = []
+        last_processed_stt_text = "" # Track the very last text from STT (interim or final)
+
         # Process audio stream from STTClient
-        async for partial in stt_client.stream_transcribe(audio_gen()):
+        async for stt_event in stt_client.stream_transcribe(audio_gen()):
             if ws.client_state != WebSocketState.CONNECTED:
                 print("WebSocket disconnected while receiving partials. Breaking.")
                 break 
-            full_transcript_parts.append(partial)
+
+            transcript_text = stt_event.get("text", "")
+            is_speech_final = stt_event.get("is_speech_final", False)
+
+            if not transcript_text.strip(): # Skip if empty text
+                continue
+
+            last_processed_stt_text = transcript_text # Update with every non-empty text
+
             try:
-                await ws.send_text(json.dumps({"partial": partial}))
+                await ws.send_text(json.dumps({
+                    "text": transcript_text,
+                    "is_final_utterance_segment": is_speech_final
+                }))
             except Exception as send_err:
                 print(f"Error sending partial transcript: {send_err}. Client might have disconnected.")
                 break # Stop processing if we can't send to client
+            
+            if is_speech_final:
+                final_transcript_segments.append(transcript_text)
         
         print("Finished iterating stt_client.stream_transcribe.")
 
-        transcript = " ".join(full_transcript_parts).strip()
-        if not transcript:
-            transcript = "No speech detected in audio" if first_chunk_received else "Session ended prematurely or no audio sent."
+        # Construct the final transcript for OpenAI and database
+        built_transcript_from_finals = " ".join(final_transcript_segments).strip()
+        transcript = built_transcript_from_finals
+
+        if not transcript: # if built_transcript_from_finals is empty
+            if last_processed_stt_text:
+                transcript = last_processed_stt_text
+            elif first_chunk_received:
+                 transcript = "No speech detected in audio"
+            else:
+                transcript = "Session ended prematurely or no audio sent."
+
+        elif final_transcript_segments and last_processed_stt_text and \
+             last_processed_stt_text.startswith(final_transcript_segments[-1]) and \
+             len(last_processed_stt_text) > len(final_transcript_segments[-1]):
+            # This condition aims to catch if the audio cut off mid-utterance after the last speech_final event.
+            # It checks if the last_processed_stt_text (which could be an interim) is a continuation
+            # of the last recognized final segment.
+            final_transcript_segments[-1] = last_processed_stt_text # Update the last final segment to be more complete
+            transcript = " ".join(final_transcript_segments).strip()
         
-        print("Full Transcript: " + transcript)
+        print("Full Transcript for OpenAI: " + transcript)
 
         summary = "Summary could not be generated for this session." # Default summary
 

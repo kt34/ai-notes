@@ -1,4 +1,3 @@
-# backend/app/stt.py
 import asyncio
 import inspect # For debugging
 from deepgram import DeepgramClient, LiveOptions, LiveTranscriptionEvents
@@ -20,23 +19,21 @@ class STTClient:
         if result.channel and result.channel.alternatives and len(result.channel.alternatives) > 0:
             transcript = result.channel.alternatives[0].transcript
         
-        is_really_final = result.is_final or getattr(result, 'speech_final', False)
         # With interim_results=True, we get many messages. We primarily want to pass
-        # non-empty transcripts to the main handler. The main handler in main.py
-        # will then decide what to do with them (e.g., send partials to client).
+        # non-empty transcripts along with their finality status to the main handler.
         if transcript and len(transcript.strip()) > 0:
             try:
-                # Add a flag or structure if you need to distinguish interim vs final in main.py
-                # For now, just sending the transcript string.
-                self._current_q.put_nowait(transcript) 
-                # if is_really_final:
-                #     print(f"STTClient CB (_on_message): Queued FINAL transcript: '{transcript[:30]}...'")
-                # else:
-                #     print(f"STTClient CB (_on_message): Queued INTERIM transcript: '{transcript[:30]}...'")
+                # speech_final is a top-level attribute on the result object for Deepgram Python SDK v3+
+                # For older versions, it might be in result.channel.alternatives[0].metadata.speech_final
+                is_final_utterance = getattr(result, 'speech_final', False)
+                self._current_q.put_nowait({
+                    "text": transcript,
+                    "is_speech_final": is_final_utterance
+                })
 
             except asyncio.QueueFull:
                 print(f"STTClient CB (_on_message): Deepgram message queue full. Transcript '{transcript[:30]}...' lost.")
-        # elif is_really_final and not transcript:
+        # elif is_really_final and not transcript: # 'is_really_final' was not well-defined here, relying on 'speech_final' now
             # print("STTClient CB (_on_message): is_final event with empty transcript.")
 
 
@@ -47,7 +44,7 @@ class STTClient:
         print(f"STTClient CB: Deepgram Speech started: {speech_started}")
 
     def _on_utterance_end(self, dg_connection_instance, utterance_end):
-        print(f"STTClient CB: Deepgram Utterance ended: {utterance_end}")
+        print(f"STTClient CB: Deepgram Utterance ended: {utterance_end}") # This CB also indicates an utterance end.
 
     def _on_error(self, dg_connection_instance, error):
         error_message = str(error)
@@ -90,9 +87,10 @@ class STTClient:
                 model="nova-2",
                 punctuate=True, language="en-US",
                 encoding="linear16", channels=1, sample_rate=16000,
-                interim_results=True, # <<<< REVERTED TO TRUE
+                interim_results=True, 
                 utterance_end_ms="1000", vad_events=True,
-                smart_format=True 
+                smart_format=True,
+                # speech_final=True # Explicitly request speech_final events
             )
             
             print(f"STTClient: Attempting to start Deepgram connection with options: {options}")
@@ -127,8 +125,8 @@ class STTClient:
                     if isinstance(item, str) and item.startswith("ERROR:"):
                         print(f"STTClient: (Send Loop) Propagating error: {item}")
                         raise Exception(item)
-                    # Yield all non-empty strings (interim or final transcripts)
-                    if isinstance(item, str) and item.strip():
+                    # Yield all non-empty transcript dicts
+                    if isinstance(item, dict) and item.get("text", "").strip():
                         yield item
 
             print("STTClient: Audio generator finished.")
@@ -145,7 +143,7 @@ class STTClient:
             processed_after_finish = 0
             while True:
                 try:
-                    item = await asyncio.wait_for(self._current_q.get(), timeout=20.0)
+                    item = await asyncio.wait_for(self._current_q.get(), timeout=20.0) # Adjusted timeout
                     processed_after_finish +=1
                 except asyncio.TimeoutError:
                     print(f"STTClient: Timeout draining queue after finish (processed {processed_after_finish} items).")
@@ -160,7 +158,7 @@ class STTClient:
                 if isinstance(item, str) and item.startswith("ERROR:"):
                     print(f"STTClient: (Drain Loop) Propagating error: {item}")
                     raise Exception(item) 
-                if isinstance(item, str) and item.strip(): # Yield any remaining transcripts
+                if isinstance(item, dict) and item.get("text","").strip(): # Yield any remaining transcript dicts
                     yield item
             
             print(f"STTClient: Finished draining queue (processed {processed_after_finish} items in drain loop).")
@@ -176,8 +174,9 @@ class STTClient:
         finally:
             print("STTClient: Outer finally block.")
             if self._current_q:
-                if self._current_q.empty():
+                if self._current_q.empty(): # Ensure None is put if queue is empty
                     try: self._current_q.put_nowait(None)
-                    except: pass 
+                    except asyncio.QueueFull: pass # Should not happen if empty
+                    except Exception: pass # Catch any other rare errors
             self._current_q = None 
             print("STTClient: stream_transcribe fully finished.")
