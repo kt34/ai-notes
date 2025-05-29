@@ -10,8 +10,26 @@ class Summarizer:
             return "No transcript provided to summarize."
             
         prompt = (
-            "Generate concise lecture notes from the following transcript, with detailed bullet points, and give some links if possible to references:\n\n" + transcript
+            "You are an expert academic note-taker. I will provide you with a long lecture transcript.\n"
+            "Your task is to extract the key information and produce clear, structured notes suitable for students.\n\n"
+            "Please organize the notes with the following format:\n"
+            "- Lecture Title: [If available or inferable]\n"
+            "- Date/Topic Summary: [Brief one-sentence summary]\n"
+            "- Key Concepts and Definitions: Bullet points of main ideas and terms\n"
+            "- Main Points Covered: Use bullet points or numbered sections to summarize main ideas in order\n"
+            "- Examples or Case Studies Mentioned: If any\n"
+            "- Important Quotes or Explanations: If any notable phrases or instructor explanations stand out\n"
+            "- Summary/Conclusion: A short paragraph summarizing the key takeaways\n"
+            "- Optional References: Add relevant links to further reading or sources, if applicable\n\n"
+            "Make sure the notes are:\n"
+            "- Concise but informative\n"
+            "- Easy to review later\n"
+            "- Organized logically\n"
+            "- Suitable for revising before an exam\n\n"
+            "Here is the lecture transcript:\n\n"
+            + transcript
         )
+
         try:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
