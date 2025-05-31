@@ -28,12 +28,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      fetchUser(storedToken);
-    } else {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      
+      if (storedToken && storedRefreshToken) {
+        try {
+          // First try with the stored token
+          const userData = await fetchUser(storedToken);
+          if (userData) {
+            setUser(userData);
+            setToken(storedToken);
+          } else {
+            // If stored token fails, try to refresh
+            const response = await fetch('http://localhost:8000/auth/refresh', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ refresh_token: storedRefreshToken }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              localStorage.setItem('token', data.access_token);
+              localStorage.setItem('refreshToken', data.refresh_token);
+              const refreshedUserData = await fetchUser(data.access_token);
+              if (refreshedUserData) {
+                setUser(refreshedUserData);
+                setToken(data.access_token);
+              }
+            } else {
+              // If refresh fails, clear everything
+              handleLogout();
+            }
+          }
+        } catch (err) {
+          console.error('Auth initialization error:', err);
+          handleLogout();
+        }
+      }
       setIsLoading(false);
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const fetchUser = async (authToken: string) => {
@@ -44,19 +82,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch user');
+      if (!response.ok) return null;
       
       const userData = await response.json();
-      setUser(userData.user);
-      setToken(authToken);
+      return userData;
     } catch (err) {
       console.error('Error fetching user:', err);
-      localStorage.removeItem('token');
-      setToken(null);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+      return null;
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    setToken(null);
+    setUser(null);
   };
 
   const login = async (email: string, password: string) => {
@@ -77,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('refreshToken', data.refresh_token);
       setToken(data.access_token);
       setUser({
         id: data.user_id,
@@ -108,7 +149,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       console.log('Registration successful:', data);
-      // After registration, we'll show a message to verify email
       setError('Please check your email to verify your account before logging in.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -134,9 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.removeItem('token');
-      setToken(null);
-      setUser(null);
+      handleLogout();
       setIsLoading(false);
     }
   };

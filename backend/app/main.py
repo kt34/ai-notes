@@ -72,6 +72,18 @@ async def get_lecture(lecture_id: str, current_user: SupabaseUser = Depends(get_
             raise e
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/auth/refresh")
+async def refresh_token(refresh_token: str):
+    try:
+        # Use the refresh token to get a new access token
+        response = supabase.auth.refresh_session(refresh_token)
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
