@@ -1,27 +1,26 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LectureDetail } from './LectureDetail';
 
 interface Lecture {
   id: string;
-  user_id: string;
+  created_at: string;
   transcript: string;
   summary: string;
-  created_at: string;
-  updated_at: string;
+  title: string;
 }
 
 export function Lectures() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedLectureId, setSelectedLectureId] = useState<string | null>(null);
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLectures = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/lectures`, {
+        const response = await fetch('http://localhost:8000/lectures', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -33,9 +32,9 @@ export function Lectures() {
 
         const data = await response.json();
         setLectures(data);
+        setIsLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load lectures');
-      } finally {
+        setError(err instanceof Error ? err.message : 'An error occurred');
         setIsLoading(false);
       }
     };
@@ -43,14 +42,31 @@ export function Lectures() {
     fetchLectures();
   }, [token]);
 
-  if (selectedLectureId) {
-    return (
-      <LectureDetail 
-        lectureId={selectedLectureId} 
-        onBack={() => setSelectedLectureId(null)} 
-      />
-    );
-  }
+  const calculateReadingTime = (text: string) => {
+    const wordsPerMinute = 200;
+    const words = text.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return `${minutes} min read`;
+  };
+
+  const getPreview = (text: string, maxLength = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const countKeyPoints = (summary: string) => {
+    // Count bullet points or numbered items in the summary
+    const bulletPoints = (summary.match(/[•\-\*]|\d+\./g) || []).length;
+    return bulletPoints || 1; // Return at least 1 if no bullet points found
+  };
 
   if (isLoading) {
     return (
@@ -58,7 +74,7 @@ export function Lectures() {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        minHeight: '60vh',
+        height: '50vh',
         color: 'rgba(255, 255, 255, 0.8)'
       }}>
         Loading lectures...
@@ -69,16 +85,11 @@ export function Lectures() {
   if (error) {
     return (
       <div style={{ 
-        padding: '2rem',
-        background: 'rgba(239, 68, 68, 0.1)',
-        border: '1px solid rgba(239, 68, 68, 0.2)',
-        borderRadius: '8px',
+        textAlign: 'center', 
         color: '#ef4444',
-        margin: '2rem auto',
-        maxWidth: '600px',
-        textAlign: 'center'
+        padding: '2rem'
       }}>
-        {error}
+        Error: {error}
       </div>
     );
   }
@@ -86,111 +97,113 @@ export function Lectures() {
   if (lectures.length === 0) {
     return (
       <div style={{ 
-        textAlign: 'center',
-        padding: '4rem 2rem',
-        color: 'rgba(255, 255, 255, 0.6)'
+        textAlign: 'center', 
+        color: 'rgba(255, 255, 255, 0.6)',
+        padding: '3rem'
       }}>
-        <h2 style={{ marginBottom: '1rem', color: '#fff' }}>No Lectures Yet</h2>
-        <p>Start recording your first lecture to see it here!</p>
+        <h2 style={{ marginBottom: '1rem' }}>No lectures yet</h2>
+        <p>Start recording to create your first lecture notes!</p>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <h1 style={{ 
+        fontSize: 'clamp(1.5rem, 3vw, 2rem)',
         color: '#fff',
-        marginBottom: '2rem',
-        fontSize: '2rem',
-        textAlign: 'center'
+        marginBottom: '2rem'
       }}>
         Your Lectures
       </h1>
+      
       <div style={{ 
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '2rem',
-        maxWidth: '1200px',
-        margin: '0 auto'
+        gap: '2rem'
       }}>
         {lectures.map((lecture) => (
           <div
             key={lecture.id}
-            className="lecture-card"
-            onClick={() => setSelectedLectureId(lecture.id)}
+            onClick={() => navigate(`/lectures/${lecture.id}`)}
             style={{
               background: 'rgba(255, 255, 255, 0.03)',
               borderRadius: '16px',
               padding: '1.5rem',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-              cursor: 'pointer'
+              backdropFilter: 'blur(8px)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+              e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.1)';
             }}
           >
             <div style={{ 
-              fontSize: '0.875rem',
-              color: 'rgba(255, 255, 255, 0.5)',
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-start',
               marginBottom: '1rem'
             }}>
-              {new Date(lecture.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </div>
-            
-            <div style={{ 
-              color: '#fff',
-              fontSize: '1.25rem',
-              fontWeight: 600,
-              marginBottom: '1rem',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {lecture.summary.split('\n')[0]?.replace('- Lecture Title: ', '') || 'Untitled Lecture'}
+              <span style={{ 
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '0.875rem'
+              }}>
+                {formatDate(lecture.created_at)}
+              </span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(100, 108, 255, 0.1)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                color: '#646cff'
+              }}>
+                <span>✨</span>
+                {countKeyPoints(lecture.summary)} key points
+              </div>
             </div>
 
-            <div style={{ 
-              color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '0.875rem',
-              marginBottom: '1rem',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              lineHeight: 1.5
-            }}>
-              {lecture.transcript}
+            <div style={{ marginBottom: '1rem' }}>
+              <h3 style={{ 
+                color: '#fff',
+                fontSize: '1.25rem',
+                marginBottom: '0.5rem',
+                fontWeight: '600'
+              }}>
+                {lecture.title || `Untitled Lecture #${lecture.id.slice(0, 8)}`}
+              </h3>
+              <p style={{ 
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '0.875rem',
+                lineHeight: '1.5'
+              }}>
+                {getPreview(lecture.transcript)}
+              </p>
             </div>
 
             <div style={{
-              fontSize: '0.75rem',
-              color: 'rgba(255, 255, 255, 0.4)',
               display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
+              justifyContent: 'flex-end',
+              color: 'rgba(255, 255, 255, 0.4)',
+              fontSize: '0.75rem'
             }}>
-              <span>🎤 {Math.ceil(lecture.transcript.split(' ').length / 130)} min read</span>
-              <span>•</span>
-              <span>📝 {lecture.summary.split('\n').length} key points</span>
+              {calculateReadingTime(lecture.transcript)}
             </div>
           </div>
         ))}
       </div>
-      <style>{`
-        .lecture-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-        }
-      `}</style>
     </div>
   );
 } 

@@ -1,14 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from './contexts/AuthContext';
-import { LoginForm } from './components/auth/LoginForm';
-import { RegisterForm } from './components/auth/RegisterForm';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { RecordPage } from './pages/RecordPage';
-import { LecturesPage } from './pages/LecturesPage';
-import { LectureDetailPage } from './pages/LectureDetailPage';
-import './App.css'; // Assuming your App.css provides the necessary base styles
+import { useAuth } from '../contexts/AuthContext';
 
-function RecordingApp() {
+export interface RecordingAppProps {}
+
+export function RecordingApp({}: RecordingAppProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [completedTranscriptSegments, setCompletedTranscriptSegments] = useState<string[]>([]);
@@ -113,8 +108,6 @@ function RecordingApp() {
     setIsRecording(false);
     setIsProcessing(true); 
     setTranscription(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
-    // Final interim might be useful, but summary message will overwrite
-    // setCurrentInterimTranscript(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
 
     if (processorRef.current) {
         console.log('📝 Disconnecting audio processor...');
@@ -194,8 +187,6 @@ function RecordingApp() {
         
         console.log('✅ Audio setup complete, starting recording...');
         setIsRecording(true); 
-        // Initial transcription message moved to isRecording useEffect for clarity
-        // setTranscription('🟢 Connected. Start speaking...');
 
       } catch (error) {
         console.error('❌ Audio setup failed:', error);
@@ -225,16 +216,24 @@ function RecordingApp() {
                 console.log('📋 Received final summary');
                 setIsProcessing(false);
                 setSummary(message.summary);
-                // When final summary arrives, display the full final transcript
-                // and clear the live-building parts
                 setTranscription(message.transcript || completedTranscriptSegments.join(' ') + (currentInterimTranscript ? ' ' + currentInterimTranscript : ''));
-                setCompletedTranscriptSegments([]); // Clear for next potential recording session (though usually handled by start)
-                setCurrentInterimTranscript('');   // Clear for next potential recording session
+                setCompletedTranscriptSegments([]);
+                setCurrentInterimTranscript('');
+
+                // Extract title from first sentence or first few words
+                const title = message.transcript?.split('.')[0]?.trim() || 'Untitled Lecture';
+                const displayTitle = title.length > 100 ? title.split(' ').slice(0, 10).join(' ') + '...' : title;
+                
+                // Update page title temporarily
+                document.title = `${displayTitle} - notez.ai`;
+                setTimeout(() => {
+                    document.title = 'notez.ai';
+                }, 5000);
             } else if (message.error) {
                 console.error('❌ Received error from server:', message.error);
                 setIsProcessing(false);
                 setTranscription(prev => `${prev}\n\n❌ Error: ${message.error}`);
-            } else if (message.partial) { // Fallback for old message format, though should not happen with new backend
+            } else if (message.partial) {
               console.warn('Received old "partial" message format. Updating current interim.');
               setCurrentInterimTranscript(message.partial);
             }
@@ -252,195 +251,183 @@ function RecordingApp() {
 
     socketRef.current.onclose = (event) => {
         console.log('🔌 WebSocket closed:', event.code, event.reason);
-        if (isRecordingRef.current) { // If it closes while we thought we were recording
+        if (isRecordingRef.current) {
             setTranscription(prev => `${prev}\n\n⚠️ Connection closed unexpectedly. Code: ${event.code}`);
-            setIsRecording(false); // Update state to reflect closure
-            // No setIsProcessing(true) here, as the process was interrupted
-            cleanup(false); // Perform full cleanup
-        } else if (isProcessing) { // If it closes while we were expecting summary
+            setIsRecording(false);
+            cleanup(false);
+        } else if (isProcessing) {
              setTranscription(prev => `${prev}\n\n⚠️ Connection closed while processing. Code: ${event.code}`);
              setIsProcessing(false);
-             // No cleanup here if stopRecording already initiated it partially for the socket.
         }
     };
   };
 
-  // Effect to update the main transcription display from segments
   useEffect(() => {
-    if (isRecordingRef.current && !isProcessing) { // Only update live if actively recording and not processing final
+    if (isRecordingRef.current && !isProcessing) {
       const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
-      // Ensure initial messages are not prepended once actual transcription starts
-      if (liveDisplay || currentInterimTranscript) { // If there's any text from STT
+      if (liveDisplay || currentInterimTranscript) {
           setTranscription(liveDisplay);
       } else if (isRecordingRef.current && transcription !== '🟢 Connected. Start speaking...' && transcription !== '🎤 Initializing microphone...' && transcription !== '🟡 Connecting to server...') {
-          // If recording just started and no text yet, but an old message is there, clear it to 'Listening...'
-          // Or, if it's one of the initial messages, let it be.
           if (transcription === '🟢 Connected. Start speaking...' || transcription === '🎤 Initializing microphone...' || transcription === '🟡 Connecting to server...') {
-            // Keep these initial messages until first text arrives
           } else {
             setTranscription('🎤 Listening...');
           }
       }
-    } else if (!isRecordingRef.current && !isProcessing && !summary) { // Not recording, not processing, no summary yet
-        // If there's any lingering text after stopping but before summary, show it
+    } else if (!isRecordingRef.current && !isProcessing && !summary) {
         const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
-        if (lastKnownText && !transcription.includes("⏹️ Recording stopped.")) { // Don't overwrite "stopped" message
+        if (lastKnownText && !transcription.includes("⏹️ Recording stopped.")) {
             setTranscription(lastKnownText);
         }
     }
-  }, [completedTranscriptSegments, currentInterimTranscript, isProcessing, summary, transcription]); // Added transcription to dependencies for the initial message check
+  }, [completedTranscriptSegments, currentInterimTranscript, isProcessing, summary, transcription]);
 
-
-  // UI Rendering (same as before)
   return (
-    <div className="main-content">
-      <div style={{ 
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '20px'
+    <div style={{ 
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: '20px'
+    }}>
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '30px'
       }}>
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '30px'
+        <h1 style={{ 
+          fontSize: 'clamp(2rem, 5vw, 2.8rem)', 
+          color: '#fff',
+          marginBottom: '10px', 
+          fontWeight: 'bold'
+        }}>notez.ai</h1>
+        <p style={{ 
+          fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', 
+          color: 'rgba(255, 255, 255, 0.6)', 
+          maxWidth: '600px', 
+          margin: '0 auto 20px' 
         }}>
-          <h1 style={{ 
-            fontSize: 'clamp(2rem, 5vw, 2.8rem)', 
+          Smart lecture notes powered by AI
+        </p>
+      </div>
+
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        marginBottom: '30px' 
+      }}>
+        <button 
+          onClick={handleToggleRecording} 
+          disabled={isProcessing && !isRecordingRef.current}
+          className="record-button"
+          style={{ 
+            padding: '15px 30px',
+            fontSize: '1.2rem',
+            cursor: (isProcessing && !isRecordingRef.current) ? 'not-allowed' : 'pointer',
+            backgroundColor: (isProcessing && !isRecordingRef.current) ? 'rgba(255, 255, 255, 0.1)' : (isRecordingRef.current ? '#ef4444' : '#646cff'),
+            border: 'none',
+            borderRadius: '50px',
             color: '#fff',
-            marginBottom: '10px', 
-            fontWeight: 'bold'
-          }}>notez.ai</h1>
-          <p style={{ 
-            fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', 
-            color: 'rgba(255, 255, 255, 0.6)', 
-            maxWidth: '600px', 
-            margin: '0 auto 20px' 
-          }}>
-            Smart lecture notes powered by AI
-          </p>
-        </div>
-
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          marginBottom: '30px' 
-        }}>
-          <button 
-            onClick={handleToggleRecording} 
-            disabled={isProcessing && !isRecordingRef.current}
-            className="record-button"
-            style={{ 
-              padding: '15px 30px',
-              fontSize: '1.2rem',
-              cursor: (isProcessing && !isRecordingRef.current) ? 'not-allowed' : 'pointer',
-              backgroundColor: (isProcessing && !isRecordingRef.current) ? 'rgba(255, 255, 255, 0.1)' : (isRecordingRef.current ? '#ef4444' : '#646cff'),
-              border: 'none',
-              borderRadius: '50px',
-              color: '#fff',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              opacity: (isProcessing && !isRecordingRef.current) ? 0.7 : 1,
-              transform: (isProcessing && !isRecordingRef.current) ? 'none' : 'translateY(0)'
-            }}
-          >
-            <span style={{ fontSize: '1.4rem' }}>
-              {(isProcessing && !isRecordingRef.current) ? '⏳' : (isRecordingRef.current ? '🛑' : '🎤')}
-            </span>
-            {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? 'Stop Recording' : 'Start Recording')}
-          </button>
-        </div>
-
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-          gap: '30px' 
-        }}>
-          <div style={{ 
-            background: 'rgba(255, 255, 255, 0.03)',
-            borderRadius: '16px',
-            padding: '25px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            minHeight: '300px',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            transition: 'all 0.3s ease',
             display: 'flex',
-            flexDirection: 'column'
+            alignItems: 'center',
+            gap: '10px',
+            opacity: (isProcessing && !isRecordingRef.current) ? 0.7 : 1,
+            transform: (isProcessing && !isRecordingRef.current) ? 'none' : 'translateY(0)'
+          }}
+        >
+          <span style={{ fontSize: '1.4rem' }}>
+            {(isProcessing && !isRecordingRef.current) ? '⏳' : (isRecordingRef.current ? '🛑' : '🎤')}
+          </span>
+          {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? 'Stop Recording' : 'Start Recording')}
+        </button>
+      </div>
+
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+        gap: '30px' 
+      }}>
+        <div style={{ 
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: '16px',
+          padding: '25px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          minHeight: '300px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <h2 style={{ 
+            color: '#fff',
+            fontSize: '1.5rem',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
           }}>
-            <h2 style={{ 
-              color: '#fff',
-              fontSize: '1.5rem',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <span>📝</span> Live Transcription
-              {isRecordingRef.current && (
-                <span style={{ 
-                  display: 'inline-block',
-                  width: '12px',
-                  height: '12px',
-                  backgroundColor: '#646cff',
-                  borderRadius: '50%',
-                  marginLeft: 'auto',
-                  animation: 'pulseAnimation 1.5s infinite ease-in-out'
-                }}></span>
-              )}
-            </h2>
-            <div style={{ 
-              flex: 1,
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              padding: '20px',
-              fontSize: '1rem',
-              lineHeight: '1.6',
-              color: 'rgba(255, 255, 255, 0.8)',
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordWrap: 'break-word'
-            }}>
-              {transcription || (isProcessing && !isRecordingRef.current ? '⏳ Waiting for final transcript and summary...' : 'Start recording to see live transcription...')}
-            </div>
+            <span>📝</span> Live Transcription
+            {isRecordingRef.current && (
+              <span style={{ 
+                display: 'inline-block',
+                width: '12px',
+                height: '12px',
+                backgroundColor: '#646cff',
+                borderRadius: '50%',
+                marginLeft: 'auto',
+                animation: 'pulseAnimation 1.5s infinite ease-in-out'
+              }}></span>
+            )}
+          </h2>
+          <div style={{ 
+            flex: 1,
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderRadius: '10px',
+            padding: '20px',
+            fontSize: '1rem',
+            lineHeight: '1.6',
+            color: 'rgba(255, 255, 255, 0.8)',
+            overflowY: 'auto',
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word'
+          }}>
+            {transcription || (isProcessing && !isRecordingRef.current ? '⏳ Waiting for final transcript and summary...' : 'Start recording to see live transcription...')}
           </div>
+        </div>
 
-          <div style={{ 
-            background: 'rgba(255, 255, 255, 0.03)',
-            borderRadius: '16px',
-            padding: '25px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            minHeight: '300px',
+        <div style={{ 
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: '16px',
+          padding: '25px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          minHeight: '300px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <h2 style={{ 
+            color: '#fff',
+            fontSize: '1.5rem',
+            marginBottom: '20px',
             display: 'flex',
-            flexDirection: 'column'
+            alignItems: 'center',
+            gap: '10px'
           }}>
-            <h2 style={{ 
-              color: '#fff',
-              fontSize: '1.5rem',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <span>✨</span> AI Summary
-            </h2>
-            <div style={{ 
-              flex: 1,
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '10px',
-              padding: '20px',
-              fontSize: '1rem',
-              lineHeight: '1.6',
-              color: 'rgba(255, 255, 255, 0.8)',
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordWrap: 'break-word'
-            }}>
-              {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
-            </div>
+            <span>✨</span> AI Summary
+          </h2>
+          <div style={{ 
+            flex: 1,
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderRadius: '10px',
+            padding: '20px',
+            fontSize: '1rem',
+            lineHeight: '1.6',
+            color: 'rgba(255, 255, 255, 0.8)',
+            overflowY: 'auto',
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word'
+          }}>
+            {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
           </div>
         </div>
       </div>
@@ -457,139 +444,4 @@ function RecordingApp() {
       `}</style>
     </div>
   );
-}
-
-function NavBar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  return (
-    <nav className="nav-bar">
-      <div 
-        className="nav-brand"
-        onClick={() => navigate('/')}
-        style={{ cursor: 'pointer' }}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            navigate('/');
-          }
-        }}
-      >
-        notez.ai
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-        <div className="nav-links">
-          <button 
-            onClick={() => navigate('/')}
-            className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
-          >
-            Record
-          </button>
-          <button 
-            onClick={() => navigate('/lectures')}
-            className={`nav-link ${location.pathname.startsWith('/lectures') ? 'active' : ''}`}
-          >
-            Lectures
-          </button>
-        </div>
-        <div className="nav-user">
-          <span>{user?.full_name}</span>
-          <button onClick={logout} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const location = useLocation();
-
-  if (isLoading) {
-    return (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff',
-        fontSize: '1.2rem'
-      }}>
-        Loading...
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return (
-    <>
-      <NavBar />
-      <div className="main-content">
-        {children}
-      </div>
-    </>
-  );
-}
-
-function AuthPages() {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  return (
-    <div className="auth-container">
-      <div className="auth-logo">
-        <h1>notez.ai</h1>
-        <p>Smart lecture notes powered by AI</p>
-      </div>
-      {location.pathname === '/register' ? <RegisterForm /> : <LoginForm />}
-      <button 
-        onClick={() => {
-          if (location.pathname === '/register') {
-            navigate('/login');
-          } else {
-            navigate('/register');
-          }
-        }}
-        className="toggle-auth-btn"
-      >
-        {location.pathname === '/register' ? 'Already have an account? Login' : 'Need an account? Register'}
-      </button>
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<AuthPages />} />
-        <Route path="/register" element={<AuthPages />} />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <RecordPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/lectures" element={
-          <ProtectedRoute>
-            <LecturesPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/lectures/:id" element={
-          <ProtectedRoute>
-            <LectureDetailPage />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-export default App;
+} 

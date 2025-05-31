@@ -216,10 +216,16 @@ async def websocket_transcribe(ws: WebSocket):
             ]
             # Also consider not storing if summary indicates an error.
             if transcript.strip() and transcript not in skippable_transcripts and "Error generating summary" not in summary:
+                # Extract a title from the first sentence or first N words
+                title = transcript.split('.')[0].strip()
+                if len(title) > 100:  # If first sentence is too long, take first few words
+                    title = ' '.join(title.split()[:10]) + '...'
+                
                 db_response = supabase.table("lectures").insert({
                     "user_id": user_id,
                     "transcript": transcript,
-                    "summary": summary
+                    "summary": summary,
+                    "title": title
                 }).execute()
                 print(f"Data insertion response: {db_response}")
             else:
