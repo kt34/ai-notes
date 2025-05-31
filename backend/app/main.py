@@ -57,6 +57,21 @@ async def get_lectures(current_user: SupabaseUser = Depends(get_authenticated_us
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/lectures/{lecture_id}")
+async def get_lecture(lecture_id: str, current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    try:
+        # Query the specific lecture and ensure it belongs to the current user
+        response = supabase.table("lectures").select("*").eq("id", lecture_id).eq("user_id", current_user.id).execute()
+        
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="Lecture not found")
+            
+        return response.data[0]
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
     await ws.accept()

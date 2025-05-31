@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { LectureDetail } from './LectureDetail';
 
 interface Lecture {
   id: string;
@@ -14,6 +15,7 @@ export function Lectures() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLectureId, setSelectedLectureId] = useState<string | null>(null);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -40,6 +42,15 @@ export function Lectures() {
 
     fetchLectures();
   }, [token]);
+
+  if (selectedLectureId) {
+    return (
+      <LectureDetail 
+        lectureId={selectedLectureId} 
+        onBack={() => setSelectedLectureId(null)} 
+      />
+    );
+  }
 
   if (isLoading) {
     return (
@@ -106,6 +117,7 @@ export function Lectures() {
           <div
             key={lecture.id}
             className="lecture-card"
+            onClick={() => setSelectedLectureId(lecture.id)}
             style={{
               background: 'rgba(255, 255, 255, 0.03)',
               borderRadius: '16px',
