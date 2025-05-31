@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
+import { Lectures } from './components/Lectures';
 import './App.css'; // Assuming your App.css provides the necessary base styles
 
 function RecordingApp() {
@@ -458,6 +459,7 @@ function RecordingApp() {
 function App() {
   const { user, isLoading, logout } = useAuth();
   const [showRegister, setShowRegister] = useState(false);
+  const [currentView, setCurrentView] = useState<'record' | 'lectures'>('record');
 
   if (isLoading) {
     return (
@@ -498,6 +500,20 @@ function App() {
         <div className="nav-brand">
           notez.ai
         </div>
+        <div className="nav-links">
+          <button 
+            onClick={() => setCurrentView('record')}
+            className={`nav-link ${currentView === 'record' ? 'active' : ''}`}
+          >
+            Record
+          </button>
+          <button 
+            onClick={() => setCurrentView('lectures')}
+            className={`nav-link ${currentView === 'lectures' ? 'active' : ''}`}
+          >
+            Lectures
+          </button>
+        </div>
         <div className="nav-user">
           <span>{user.email}</span>
           <button onClick={logout} className="logout-btn">
@@ -505,7 +521,9 @@ function App() {
           </button>
         </div>
       </nav>
-      <RecordingApp />
+      <div className="main-content">
+        {currentView === 'record' ? <RecordingApp /> : <Lectures />}
+      </div>
     </>
   );
 }

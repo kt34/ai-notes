@@ -1,6 +1,8 @@
-from typing import Optional
-from pydantic import BaseModel, EmailStr
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, EmailStr, Field
 from .db import supabase
+from fastapi import HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -21,6 +23,27 @@ class RegistrationSuccessResponse(BaseModel):
     message: str
     user_id: str
     email: str
+
+class SupabaseUser(BaseModel):
+    id: str # uuid.UUID could also be used if you import uuid
+    email: Optional[EmailStr] = None
+    app_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    user_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    # Add other fields you might access, e.g.:
+    # created_at: Optional[str] = None # or datetime
+    # confirmed_at: Optional[str] = None # or datetime
+    # last_sign_in_at: Optional[str] = None # or datetime
+    # phone: Optional[str] = None
+    # role: Optional[str] = None
+
+    class Config:
+        # If Supabase returns field names that are not valid Python identifiers
+        # or if you want to use different names in your Pydantic model.
+        # For basic fields like id, email, app_metadata, user_metadata, aliasing is usually not needed.
+        # However, if Supabase used, e.g., "user_id" and you want "id", you'd alias.
+        # For now, standard names should work.
+        # orm_mode = True # Deprecated, use from_attributes = True in Pydantic v2
+        from_attributes = True # For Pydantic v2
 
 async def register_user(user_data: UserCreate) -> AuthResponse:
     """Register a new user with Supabase Auth."""
@@ -97,3 +120,33 @@ def get_current_user():
 def logout_user():
     """Log out the current user."""
     return supabase.auth.sign_out() 
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") 
+
+async def get_authenticated_user_from_header(token: str = Depends(oauth2_scheme)):
+    """
+    Dependency to get the current authenticated user from an Authorization Bearer token.
+    """
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        user_response = supabase.auth.get_user(token)
+        if not user_response or not user_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return user_response.user # Return the user object
+    except Exception as e: # Catch potential errors from supabase.auth.get_user
+        # Log the original error e for debugging if necessary
+        print(f"Error validating token with Supabase: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Could not validate credentials: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

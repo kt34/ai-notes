@@ -6,11 +6,9 @@ from starlette.websockets import WebSocketDisconnect
 from .config import settings
 from .stt import STTClient
 from .summarizer import Summarizer
-from .db import supabase
-from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user
+from .db import supabase, get_user_lectures
+from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user, get_authenticated_user_from_header, SupabaseUser
 import asyncio
-# import time # time module was imported but not used in the previous robust version
-from uuid import UUID
 
 app = FastAPI()
 app.add_middleware(
@@ -45,12 +43,19 @@ async def logout():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/auth/me")
-async def get_me():
+@app.get("/auth/me", response_model=SupabaseUser) # Assuming SupabaseUser is the model for the user object
+async def read_users_me(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    # current_user is now the authenticated Supabase user object
+    return current_user
+
+@app.get("/lectures")
+async def get_lectures(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
     try:
-        return get_current_user()
+        user_id = current_user.id
+        lectures_data = get_user_lectures(user_id)
+        return lectures_data
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
