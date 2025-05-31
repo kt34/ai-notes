@@ -12,10 +12,10 @@ def get_user_lectures(user_id: str):
     response = supabase.table("lectures") \
         .select("*") \
         .eq("user_id", user_id) \
-        .order("inserted_at", desc=True) \
+        .order("created_at", desc=True) \
         .execute()
     
     return response.data
 
 if __name__ == "__main__":
-    print(get_user_lectures("test_user"))
+    print(get_user_lectures("3bbb7cde-8dbe-4f62-a1d1-2a75167e3669"))
