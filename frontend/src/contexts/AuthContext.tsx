@@ -13,7 +13,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, full_name?: string) => Promise<void>;
+  register: (email: string, password: string, full_name?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -157,7 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       console.log('Registration successful:', data);
-      setError('Please check your email to verify your account before logging in.');
+      return {
+        success: true,
+        message: 'Please check your email to verify your account before logging in.'
+      };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
       throw err;

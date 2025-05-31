@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login, error, clearError } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       await login(email, password);
+      // Get the redirect path from location state, or default to '/'
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (err) {
       // Error is handled by the auth context
       console.error('Login error:', err);
+      setIsLoading(false);
     }
   };
 
@@ -32,6 +41,7 @@ export function LoginForm() {
             clearError();
           }}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="form-group">
@@ -46,9 +56,50 @@ export function LoginForm() {
             clearError();
           }}
           required
+          disabled={isLoading}
         />
       </div>
-      <button type="submit">Sign In</button>
+      <button 
+        type="submit" 
+        disabled={isLoading}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}
+      >
+        {isLoading ? (
+          <>
+            <span className="loading-spinner"></span>
+            Signing in...
+          </>
+        ) : (
+          'Sign In'
+        )}
+      </button>
+      <style>{`
+        .loading-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          border-top-color: #fff;
+          animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        .auth-form button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      `}</style>
     </form>
   );
 } 
