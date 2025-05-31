@@ -21,6 +21,7 @@ class Summarizer:
             "- Important Quotes or Explanations: If any notable phrases or instructor explanations stand out\n"
             "- Summary/Conclusion: A short paragraph summarizing the key takeaways\n"
             "- Optional References: Add relevant links to further reading or sources, if applicable\n\n"
+            "Always return in this format, no matter even if the information is so minimal or the transcript seems empty, you need to return in this format\n\n"
             "Make sure the notes are:\n"
             "- Concise but informative\n"
             "- Easy to review later\n"
