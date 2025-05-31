@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { RecordPage } from './pages/RecordPage';
 import { LecturesPage } from './pages/LecturesPage';
 import { LectureDetailPage } from './pages/LectureDetailPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { NavBar } from './components/NavBar';
 import './App.css'; // Assuming your App.css provides the necessary base styles
 
 function RecordingApp() {
@@ -459,53 +461,6 @@ function RecordingApp() {
   );
 }
 
-function NavBar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  return (
-    <nav className="nav-bar">
-      <div 
-        className="nav-brand"
-        onClick={() => navigate('/')}
-        style={{ cursor: 'pointer' }}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            navigate('/');
-          }
-        }}
-      >
-        notez.ai
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-        <div className="nav-links">
-          <button 
-            onClick={() => navigate('/')}
-            className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
-          >
-            Record
-          </button>
-          <button 
-            onClick={() => navigate('/lectures')}
-            className={`nav-link ${location.pathname.startsWith('/lectures') ? 'active' : ''}`}
-          >
-            Lectures
-          </button>
-        </div>
-        <div className="nav-user">
-          <span>{user?.full_name}</span>
-          <button onClick={logout} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
@@ -585,6 +540,11 @@ function App() {
         <Route path="/lectures/:id" element={
           <ProtectedRoute>
             <LectureDetailPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         } />
       </Routes>

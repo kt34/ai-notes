@@ -278,3 +278,21 @@ async def websocket_transcribe(ws: WebSocket):
                 print(f"Unexpected error during WebSocket close: {e}")
         else:
             print("FastAPI WebSocket already disconnected.")
+
+@app.get("/user/stats")
+async def get_user_stats(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    try:
+        # Get user's lectures
+        response = supabase.table("lectures").select("*").eq("user_id", current_user.id).execute()
+        lectures = response.data if response.data else []
+        
+        # Calculate total lectures and total minutes (assuming average of 5 minutes per lecture for now)
+        total_lectures = len(lectures)
+        total_minutes = total_lectures * 5  # This is a placeholder. You might want to store actual duration in your lectures table
+        
+        return {
+            "total_lectures": total_lectures,
+            "total_minutes": total_minutes
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
