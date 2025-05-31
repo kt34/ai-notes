@@ -85,7 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) return null;
       
       const userData = await response.json();
-      return userData;
+      return {
+        id: userData.id,
+        email: userData.email,
+        full_name: userData.user_metadata?.full_name || null
+      };
     } catch (err) {
       console.error('Error fetching user:', err);
       return null;
@@ -119,10 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('refreshToken', data.refresh_token);
       setToken(data.access_token);
-      setUser({
-        id: data.user_id,
-        email: data.email
-      });
+      
+      // Fetch the complete user data after login
+      const userData = await fetchUser(data.access_token);
+      if (userData) {
+        setUser(userData);
+      } else {
+        throw new Error('Failed to fetch user data');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
       throw err;

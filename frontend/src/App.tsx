@@ -298,19 +298,19 @@ function RecordingApp() {
       }}>
         <div style={{
           textAlign: 'center',
-          marginBottom: '40px'
+          marginBottom: '30px'
         }}>
           <h1 style={{ 
             fontSize: 'clamp(2rem, 5vw, 2.8rem)', 
             color: '#fff',
-            marginBottom: '20px', 
+            marginBottom: '10px', 
             fontWeight: 'bold'
           }}>notez.ai</h1>
           <p style={{ 
             fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', 
             color: 'rgba(255, 255, 255, 0.6)', 
             maxWidth: '600px', 
-            margin: '0 auto 30px' 
+            margin: '0 auto 20px' 
           }}>
             Smart lecture notes powered by AI
           </p>
@@ -494,31 +494,46 @@ function App() {
     );
   }
 
+  console.log("user is " + user.full_name);
+
   return (
     <>
       <nav className="nav-bar">
-        <div className="nav-brand">
+        <div 
+          className="nav-brand"
+          onClick={() => setCurrentView('record')}
+          style={{ cursor: 'pointer' }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              setCurrentView('record');
+            }
+          }}
+        >
           notez.ai
         </div>
-        <div className="nav-links">
-          <button 
-            onClick={() => setCurrentView('record')}
-            className={`nav-link ${currentView === 'record' ? 'active' : ''}`}
-          >
-            Record
-          </button>
-          <button 
-            onClick={() => setCurrentView('lectures')}
-            className={`nav-link ${currentView === 'lectures' ? 'active' : ''}`}
-          >
-            Lectures
-          </button>
-        </div>
-        <div className="nav-user">
-          <span>{user.email}</span>
-          <button onClick={logout} className="logout-btn">
-            Logout
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <div className="nav-links">
+            <button 
+              onClick={() => setCurrentView('record')}
+              className={`nav-link ${currentView === 'record' ? 'active' : ''}`}
+            >
+              Record
+            </button>
+            <button 
+              onClick={() => setCurrentView('lectures')}
+              className={`nav-link ${currentView === 'lectures' ? 'active' : ''}`}
+            >
+              Lectures
+            </button>
+          </div>
+          <div className="nav-user">
+            <span>{user.full_name}</span>
+            <button onClick={logout} className="logout-btn">
+              Logout
+            </button>
+          </div>
         </div>
       </nav>
       <div className="main-content">

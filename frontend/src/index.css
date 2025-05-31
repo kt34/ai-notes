@@ -174,7 +174,7 @@ body {
 .nav-links {
   display: flex;
   gap: 1rem;
-  margin: 0 1rem;
+  margin: 0;
 }
 
 .nav-link {
@@ -227,6 +227,6 @@ body {
 
 /* Main content area */
 .main-content {
-  margin-top: 4rem;
-  padding: 2rem;
+  margin-top: 0.5rem;
+  padding: 1rem 2rem;
 }

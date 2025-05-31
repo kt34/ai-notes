@@ -25,25 +25,20 @@ class RegistrationSuccessResponse(BaseModel):
     email: str
 
 class SupabaseUser(BaseModel):
-    id: str # uuid.UUID could also be used if you import uuid
+    id: str
     email: Optional[EmailStr] = None
     app_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     user_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    # Add other fields you might access, e.g.:
-    # created_at: Optional[str] = None # or datetime
-    # confirmed_at: Optional[str] = None # or datetime
-    # last_sign_in_at: Optional[str] = None # or datetime
-    # phone: Optional[str] = None
-    # role: Optional[str] = None
+    full_name: Optional[str] = None
 
     class Config:
-        # If Supabase returns field names that are not valid Python identifiers
-        # or if you want to use different names in your Pydantic model.
-        # For basic fields like id, email, app_metadata, user_metadata, aliasing is usually not needed.
-        # However, if Supabase used, e.g., "user_id" and you want "id", you'd alias.
-        # For now, standard names should work.
-        # orm_mode = True # Deprecated, use from_attributes = True in Pydantic v2
-        from_attributes = True # For Pydantic v2
+        from_attributes = True
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Extract full_name from user_metadata if it exists
+        if self.user_metadata and 'full_name' in self.user_metadata:
+            self.full_name = self.user_metadata['full_name']
 
 async def register_user(user_data: UserCreate) -> AuthResponse:
     """Register a new user with Supabase Auth."""
