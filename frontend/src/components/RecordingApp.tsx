@@ -312,7 +312,7 @@ export function RecordingApp({}: RecordingAppProps) {
   // Effect to update the main transcription display from segments and handle auto-scrolling
   useEffect(() => {
     if (isRecordingRef.current && !isProcessing) {
-      const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join('\n');
+      const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
       if (liveDisplay || currentInterimTranscript) {
           setTranscription(liveDisplay);
           // Ensure scroll happens after DOM update
@@ -332,7 +332,7 @@ export function RecordingApp({}: RecordingAppProps) {
           }
       }
     } else if (!isRecordingRef.current && !isProcessing && !summary) {
-        const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join('\n');
+        const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
         if (lastKnownText && !transcription.includes("⏹️ Recording stopped.")) {
             setTranscription(lastKnownText);
             // Ensure scroll happens after DOM update
@@ -508,7 +508,8 @@ export function RecordingApp({}: RecordingAppProps) {
               wordWrap: 'break-word',
               scrollBehavior: 'smooth',
               maxHeight: 'calc(100vh - 300px)',
-              minHeight: '300px'
+              minHeight: '300px',
+              width: '100%'
             }}
           >
             {transcription || (isProcessing && !isRecordingRef.current ? '⏳ Waiting for final transcript and summary...' : 'Start recording to see live transcription...')}
