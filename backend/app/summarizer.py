@@ -11,40 +11,47 @@ class Summarizer:
             return "No transcript provided to summarize."
             
         prompt = (
-            "You are an expert academic note-taker. I will provide you with a long lecture transcript.\n"
+            "You are an expert academic note-taker, tasked with creating comprehensive study notes from a lecture transcript. Your primary goal is to capture the depth and nuance of the lecture for thorough understanding and exam preparation.\n\n"
             "Your task is to extract the key information and produce structured notes.\n\n"
-            "Please organize the notes using the following EXACT section markers:\n"
-            "@@LECTURE_TITLE_START@@\n" # Using unique markers
-            "[Inferrable lecture title, always provide some sort of title here]\n"
+            "Please organize the notes using the following EXACT section markers and instructions:\n\n"
+            "@@LECTURE_TITLE_START@@\n"
+            "[Infer an appropriate and concise lecture title. Always provide a title, even if it's a general topic derived from the content.]\n"
             "@@LECTURE_TITLE_END@@\n\n"
+
             "@@TOPIC_SUMMARY_START@@\n"
-            "[Brief one-sentence summary]\n"
+            "[Provide a brief, single-sentence summary that encapsulates the main theme of the lecture.]\n"
             "@@TOPIC_SUMMARY_END@@\n\n"
+
             "@@KEY_CONCEPTS_START@@\n"
-            "[Bullet points of key concepts and terms. Use standard markdown bullets '-'. If none, state 'None']\n"
+            "[List key concepts and essential terminology as concise bullet points. Use standard markdown bullets '-'. Limit this section to a maximum of four key concepts. If none are distinct, state 'None'. These should be brief definitions or terms.]\n"
             "@@KEY_CONCEPTS_END@@\n\n"
+
             "@@MAIN_POINTS_START@@\n"
-            "[Use bullet points to summarize main ideas in order. Use standard markdown bullets '-'. If none, state 'None']\n"
+            "[This is a CRITICAL section. Summarize the main ideas presented in the lecture in the order they appear. Each bullet point using '-' MUST be detailed and comprehensive, potentially spanning multiple sentences to fully explain the idea, its implications, or context. Do NOT provide short, Vague phrases. Aim for explanations that would help someone thoroughly understand the topic without re-listening to the lecture. If no main points are discernible, state 'None'.]\n"
             "@@MAIN_POINTS_END@@\n\n"
+
             "@@EXAMPLES_MENTIONED_START@@\n"
-            "[Use bullet points to list the excamples mentioned in order. Use standard markdown bullets '-'. If none, state 'None']\n"
+            "[List any examples, case studies, or specific illustrations mentioned. Each bullet point using '-' should describe the example in sufficient detail to understand its relevance and how it supports a main point. These should be more than just a name; explain the example. If no examples are mentioned, state 'None'.]\n"
             "@@EXAMPLES_MENTIONED_END@@\n\n"
+
             "@@IMPORTANT_QUOTES_START@@\n"
-            "[If any notable phrases or instructor explanations stand out. Use standard markdown bullets '-'. If none, state 'None']\n"
+            "[Extract any notable or directly quoted phrases or impactful statements from the instructor. Use standard markdown bullets '-'. If none, state 'None'.]\n"
             "@@IMPORTANT_QUOTES_END@@\n\n"
+
             "@@CONCLUSION_TAKEAWAYS_START@@\n"
-            "[A short paragraph summarizing the key takeaways. If none, state 'None']\n"
+            "[Write a short, yet comprehensive paragraph summarizing the main conclusions or key takeaways from the entire lecture. This should synthesize the most important information for a final review. This section should be a paragraph, not bullet points.]\n"
             "@@CONCLUSION_TAKEAWAYS_END@@\n\n"
+
             "@@OPTIONAL_REFERENCES_START@@\n"
-            "[Add relevant links to further reading or sources, if applicable. Use standard markdown bullets '-'. If none, state 'None']\n"
+            "[List any mentioned books, articles, websites, or further reading suggestions. Use standard markdown bullets '-'. If none, state 'None'.]\n"
             "@@OPTIONAL_REFERENCES_END@@\n\n"
-            "Make sure the notes are:\n"
-            "- Concise but informative\n"
-            "- Not super short, especially for the main points and examples mentioned and the conclusion takeaways, these can be much longer dot points with all relevant information this is the main bulk of the information\n"
-            "- Easy to review later\n"
-            "- Organized logically\n"
-            "- Suitable for revising before an exam\n\n"
-            "Even if the information for a section is minimal or the transcript seems empty, YOU MUST include all start and end markers (e.g., @@SECTION_START@@ and @@SECTION_END@@) for every section. Place 'Not available' or 'None' between the markers if applicable.\n\n"
+
+            "General Note-Taking Style:\n"
+            "- The notes, especially for 'Main Points' and 'Examples Mentioned', need to be sufficiently detailed for comprehensive review. Avoid overly terse points in these sections.\n"
+            "- Ensure information is organized logically, following the lecture's flow where possible.\n"
+            "- The overall tone should be academic and informative, suitable for exam revision.\n\n"
+
+            "IMPORTANT FORMATTING REQUIREMENT: Even if the information for a section is minimal or the transcript seems empty, YOU MUST include all start and end markers (e.g., @@SECTION_START@@ and @@SECTION_END@@) for every section. Place 'Not available' or 'None' (as appropriate per section instructions) between the markers if applicable.\n\n"
             "Here is the lecture transcript:\n\n"
             + transcript
         )
