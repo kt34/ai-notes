@@ -23,6 +23,57 @@ interface Lecture {
   references: string[];
 }
 
+// Copy button component
+function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      style={{
+        background: copied ? 'rgba(86, 88, 245, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+        border: '1px solid ' + (copied ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.1)'),
+        borderRadius: '6px',
+        padding: '0.4rem 0.8rem',
+        color: copied ? '#8c8eff' : 'rgba(255, 255, 255, 0.6)',
+        fontSize: '0.8rem',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        transition: 'all 0.2s ease'
+      }}
+      onMouseEnter={(e) => {
+        if (!copied) {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.color = '#fff';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!copied) {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+          e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+        }
+      }}
+    >
+      <span style={{ fontSize: '1rem' }}>
+        {copied ? '✓' : '📋'}
+      </span>
+      {copied ? 'Copied!' : label}
+    </button>
+  );
+}
+
 export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,20 +164,28 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     );
   }
 
-  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <h3 style={{ 
-      color: '#fff',
-      fontSize: '1.2rem',
+  const SectionTitle = ({ children, copyButton }: { children: React.ReactNode, copyButton?: React.ReactNode }) => (
+    <div style={{ 
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: '1rem',
       marginTop: '1.5rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-      paddingBottom: '0.5rem'
+      paddingBottom: '0.5rem',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
     }}>
-      {children}
-    </h3>
+      <h3 style={{ 
+        color: '#fff',
+        fontSize: '1.2rem',
+        margin: 0,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem'
+      }}>
+        {children}
+      </h3>
+      {copyButton}
+    </div>
   );
 
   const ListItem = ({ children }: { children: React.ReactNode }) => (
@@ -254,7 +313,16 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             )}
           </ul>
 
-          <SectionTitle>📝 Main Points</SectionTitle>
+          <SectionTitle 
+            copyButton={
+              <CopyButton 
+                text={lecture.main_points_covered?.join('\n\n') || ''} 
+                label="Copy All Points"
+              />
+            }
+          >
+            📝 Main Points
+          </SectionTitle>
           <ul style={{ 
             listStyle: 'none', 
             padding: 0,
@@ -303,7 +371,16 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             )}
           </ul>
 
-          <SectionTitle>💡 Examples</SectionTitle>
+          <SectionTitle
+            copyButton={
+              <CopyButton 
+                text={lecture.examples_mentioned?.join('\n\n') || ''} 
+                label="Copy All Examples"
+              />
+            }
+          >
+            💡 Examples
+          </SectionTitle>
           <ul style={{ 
             listStyle: 'none', 
             padding: 0,
@@ -347,7 +424,18 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             )}
           </ul>
 
-          <SectionTitle>💬 Important Quotes</SectionTitle>
+          <SectionTitle
+            copyButton={
+              lecture.important_quotes && lecture.important_quotes.length > 0 ? (
+                <CopyButton 
+                  text={lecture.important_quotes.join('\n\n')} 
+                  label="Copy All Quotes"
+                />
+              ) : null
+            }
+          >
+            💬 Important Quotes
+          </SectionTitle>
           {lecture.important_quotes && lecture.important_quotes.length > 0 ? (
             <ul style={{ 
               listStyle: 'none', 
@@ -454,42 +542,42 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             overflow: 'hidden',
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            <button
-              onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                background: 'none',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: '#fff',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none';
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontSize: '1.2rem'
-              }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1rem',
+              background: isTranscriptExpanded ? 'rgba(255, 255, 255, 0.05)' : 'none',
+              transition: 'background 0.2s ease'
+            }}>
+              <button
+                onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontSize: '1.2rem'
+                }}
+              >
                 <span>📄</span> Full Transcript
-              </div>
-              <span style={{
-                transform: isTranscriptExpanded ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.3s ease'
-              }}>
-                ▼
-              </span>
-            </button>
+                <span style={{
+                  transform: isTranscriptExpanded ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.3s ease',
+                  marginLeft: '0.5rem'
+                }}>
+                  ▼
+                </span>
+              </button>
+              <CopyButton 
+                text={lecture.transcript || ''} 
+                label="Copy Transcript"
+              />
+            </div>
             <div style={{
               maxHeight: isTranscriptExpanded ? '1000px' : '0',
               overflow: 'hidden',
