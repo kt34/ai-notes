@@ -511,7 +511,7 @@ export function RecordingApp({}: RecordingAppProps) {
               whiteSpace: 'pre-wrap',
               wordWrap: 'break-word'
             }}>
-              {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
+              {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will be generated after your recording...')}
             </div>
           </div>
         )}

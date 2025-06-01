@@ -224,64 +224,114 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             flexWrap: 'wrap',
             gap: '0.5rem'
           }}>
-            {lecture.key_concepts.map((concept, index) => (
-              <li key={index} style={{
-                background: 'rgba(86, 88, 245, 0.1)',
-                border: '1px solid rgba(86, 88, 245, 0.2)',
-                padding: '0.5rem 1rem',
-                borderRadius: '20px',
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontSize: '0.9rem'
+            {lecture.key_concepts && lecture.key_concepts.length > 0 ? (
+              lecture.key_concepts.map((concept, index) => (
+                <li key={index} style={{
+                  background: 'rgba(86, 88, 245, 0.1)',
+                  border: '1px solid rgba(86, 88, 245, 0.2)',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '0.9rem'
+                }}>
+                  {concept}
+                </li>
+              ))
+            ) : (
+              <div style={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontStyle: 'italic',
+                padding: '0.5rem'
               }}>
-                {concept}
-              </li>
-            ))}
+                No key concepts identified for this lecture
+              </div>
+            )}
           </ul>
 
           <SectionTitle>📝 Main Points</SectionTitle>
           <ul style={{ listStyle: 'none', padding: 0 }}>
-            {lecture.main_points_covered.map((point, index) => (
-              <ListItem key={index}>{point}</ListItem>
-            ))}
+            {lecture.main_points_covered && lecture.main_points_covered.length > 0 ? (
+              lecture.main_points_covered.map((point, index) => (
+                <ListItem key={index}>{point}</ListItem>
+              ))
+            ) : (
+              <div style={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontStyle: 'italic',
+                padding: '0.5rem'
+              }}>
+                No main points were extracted from this lecture
+              </div>
+            )}
           </ul>
 
           <SectionTitle>💡 Examples</SectionTitle>
           <ul style={{ listStyle: 'none', padding: 0 }}>
-            {lecture.examples_mentioned.map((example, index) => (
-              <ListItem key={index}>{example}</ListItem>
-            ))}
+            {lecture.examples_mentioned && lecture.examples_mentioned.length > 0 ? (
+              lecture.examples_mentioned.map((example, index) => (
+                <ListItem key={index}>{example}</ListItem>
+              ))
+            ) : (
+              <div style={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontStyle: 'italic',
+                padding: '0.5rem'
+              }}>
+                No specific examples were mentioned in this lecture
+              </div>
+            )}
           </ul>
 
           <SectionTitle>💬 Important Quotes</SectionTitle>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {lecture.important_quotes.map((quote, index) => (
-              <div key={index} style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                padding: '1rem',
-                borderRadius: '8px',
-                marginBottom: '0.75rem',
-                borderLeft: '3px solid rgba(86, 88, 245, 0.5)',
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontStyle: 'italic'
-              }}>
-                {quote}
-              </div>
-            ))}
-          </ul>
+          {lecture.important_quotes && lecture.important_quotes.length > 0 ? (
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {lecture.important_quotes.map((quote, index) => (
+                <div key={index} style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  marginBottom: '0.75rem',
+                  borderLeft: '3px solid rgba(86, 88, 245, 0.5)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontStyle: 'italic'
+                }}>
+                  {quote}
+                </div>
+              ))}
+            </ul>
+          ) : (
+            <div style={{
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontStyle: 'italic',
+              padding: '0.5rem'
+            }}>
+              No notable quotes were captured from this lecture
+            </div>
+          )}
 
           <SectionTitle>🎯 Conclusion</SectionTitle>
-          <p style={{
-            color: 'rgba(255, 255, 255, 0.8)',
-            lineHeight: '1.6',
-            padding: '1rem',
-            background: 'rgba(86, 88, 245, 0.1)',
-            borderRadius: '8px',
-            border: '1px solid rgba(86, 88, 245, 0.2)'
-          }}>
-            {lecture.conclusion_takeaways}
-          </p>
+          {lecture.conclusion_takeaways ? (
+            <p style={{
+              color: 'rgba(255, 255, 255, 0.8)',
+              lineHeight: '1.6',
+              padding: '1rem',
+              background: 'rgba(86, 88, 245, 0.1)',
+              borderRadius: '8px',
+              border: '1px solid rgba(86, 88, 245, 0.2)'
+            }}>
+              {lecture.conclusion_takeaways}
+            </p>
+          ) : (
+            <div style={{
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontStyle: 'italic',
+              padding: '0.5rem'
+            }}>
+              No conclusion summary is available for this lecture
+            </div>
+          )}
 
-          {lecture.references.length > 0 && (
+          {lecture.references && lecture.references.length > 0 ? (
             <>
               <SectionTitle>📚 References</SectionTitle>
               <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -313,7 +363,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                 ))}
               </ul>
             </>
-          )}
+          ) : null}
 
           <div style={{
             marginTop: '2rem',
