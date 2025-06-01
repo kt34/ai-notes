@@ -27,6 +27,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -314,17 +315,66 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             </>
           )}
 
-          <SectionTitle>📄 Full Transcript</SectionTitle>
           <div style={{
-            color: 'rgba(255, 255, 255, 0.8)',
-            fontSize: '1rem',
-            lineHeight: '1.6',
-            whiteSpace: 'pre-wrap',
-            padding: '1rem',
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderRadius: '8px'
+            marginTop: '2rem',
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            {lecture.transcript}
+            <button
+              onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
+              style={{
+                width: '100%',
+                padding: '1rem',
+                background: 'none',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                color: '#fff',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'none';
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '1.2rem'
+              }}>
+                <span>📄</span> Full Transcript
+              </div>
+              <span style={{
+                transform: isTranscriptExpanded ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.3s ease'
+              }}>
+                ▼
+              </span>
+            </button>
+            <div style={{
+              maxHeight: isTranscriptExpanded ? '1000px' : '0',
+              overflow: 'hidden',
+              transition: 'all 0.3s ease',
+              background: 'rgba(255, 255, 255, 0.02)'
+            }}>
+              <div style={{
+                padding: '1.5rem',
+                color: 'rgba(255, 255, 255, 0.8)',
+                fontSize: '1rem',
+                lineHeight: '1.6',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word'
+              }}>
+                {lecture.transcript}
+              </div>
+            </div>
           </div>
         </div>
       </div>
