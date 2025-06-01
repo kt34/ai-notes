@@ -52,7 +52,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '80px auto 0', padding: '2rem' }}>
+    <div style={{ maxWidth: '800px', margin: '0rem auto 0', padding: '2rem' }}>
       <div style={{
         background: 'rgba(255, 255, 255, 0.03)',
         borderRadius: '16px',
