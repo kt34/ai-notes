@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LandingNavBar } from '../components/LandingNavBar';
-import demoPreview from './demo-preview.png';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -116,7 +115,7 @@ export function LandingPage() {
             pointerEvents: 'none'
           }} />
           <img 
-            src={demoPreview}
+            src="/images/demo-preview.png"
             alt="notez.ai in action"
             style={{
               width: '100%',

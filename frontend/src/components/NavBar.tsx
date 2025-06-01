@@ -43,13 +43,13 @@ export function NavBar() {
     <nav className="nav-bar">
       <div 
         className="nav-brand"
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/record')}
         style={{ cursor: 'pointer' }}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            navigate('/');
+            navigate('/record');
           }
         }}
       >
