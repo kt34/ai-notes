@@ -23,7 +23,7 @@ class Summarizer:
             "@@TOPIC_SUMMARY_END@@\n\n"
 
             "@@KEY_CONCEPTS_START@@\n"
-            "[List key concepts and essential terminology as concise bullet points. Use standard markdown bullets '-'. Limit this section to a maximum of four key concepts. If none are distinct, state 'None'. These should be brief definitions or terms.]\n"
+            "[List key concepts as concise bullet points. Each key concept can only be a maximum of three words. Use standard markdown bullets '-'. Limit this section to a maximum of four key concepts. If none are distinct, state 'None'. These should be brief definitions or terms.]\n"
             "@@KEY_CONCEPTS_END@@\n\n"
 
             "@@MAIN_POINTS_START@@\n"

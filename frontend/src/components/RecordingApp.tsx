@@ -19,6 +19,7 @@ export function RecordingApp({}: RecordingAppProps) {
   const socketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const transcriptionContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Ref to hold the latest recording status for the audio processing callback
   const isRecordingRef = useRef(isRecording);
@@ -252,6 +253,11 @@ export function RecordingApp({}: RecordingAppProps) {
                     processingIntervalRef.current = null;
                 }
 
+                if (message.transcript === "No speech detected in audio") {
+                    setTranscription("❌ No speech was detected in the recording. Please try recording again and make sure your microphone is working properly.");
+                    return;
+                }
+
                 // Extract the lecture ID from the response and redirect immediately
                 if (message.lecture_id) {
                     navigate(`/lectures/${message.lecture_id}`);
@@ -303,11 +309,22 @@ export function RecordingApp({}: RecordingAppProps) {
     };
   };
 
+  // Effect to update the main transcription display from segments and handle auto-scrolling
   useEffect(() => {
     if (isRecordingRef.current && !isProcessing) {
-      const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
+      const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join('\n');
       if (liveDisplay || currentInterimTranscript) {
           setTranscription(liveDisplay);
+          // Ensure scroll happens after DOM update
+          requestAnimationFrame(() => {
+            if (transcriptionContainerRef.current) {
+              const container = transcriptionContainerRef.current;
+              const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+              if (isAtBottom) {
+                container.scrollTop = container.scrollHeight;
+              }
+            }
+          });
       } else if (isRecordingRef.current && transcription !== '🟢 Connected. Start speaking...' && transcription !== '🎤 Initializing microphone...' && transcription !== '🟡 Connecting to server...') {
           if (transcription === '🟢 Connected. Start speaking...' || transcription === '🎤 Initializing microphone...' || transcription === '🟡 Connecting to server...') {
           } else {
@@ -315,12 +332,27 @@ export function RecordingApp({}: RecordingAppProps) {
           }
       }
     } else if (!isRecordingRef.current && !isProcessing && !summary) {
-        const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
+        const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join('\n');
         if (lastKnownText && !transcription.includes("⏹️ Recording stopped.")) {
             setTranscription(lastKnownText);
+            // Ensure scroll happens after DOM update
+            requestAnimationFrame(() => {
+              if (transcriptionContainerRef.current) {
+                transcriptionContainerRef.current.scrollTop = transcriptionContainerRef.current.scrollHeight;
+              }
+            });
         }
     }
   }, [completedTranscriptSegments, currentInterimTranscript, isProcessing, summary, transcription]);
+
+  // Additional effect to handle auto-scrolling for status messages
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (transcriptionContainerRef.current) {
+        transcriptionContainerRef.current.scrollTop = transcriptionContainerRef.current.scrollHeight;
+      }
+    });
+  }, [transcription]);
 
   return (
     <div style={{ 
@@ -461,18 +493,24 @@ export function RecordingApp({}: RecordingAppProps) {
               }}></span>
             )}
           </h2>
-          <div style={{ 
-            flex: 1,
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderRadius: '10px',
-            padding: '20px',
-            fontSize: '1rem',
-            lineHeight: '1.6',
-            color: 'rgba(255, 255, 255, 0.8)',
-            overflowY: 'auto',
-            whiteSpace: 'pre-wrap',
-            wordWrap: 'break-word'
-          }}>
+          <div 
+            ref={transcriptionContainerRef}
+            style={{ 
+              flex: 1,
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '10px',
+              padding: '20px',
+              fontSize: '1rem',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.8)',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word',
+              scrollBehavior: 'smooth',
+              maxHeight: 'calc(100vh - 300px)',
+              minHeight: '300px'
+            }}
+          >
             {transcription || (isProcessing && !isRecordingRef.current ? '⏳ Waiting for final transcript and summary...' : 'Start recording to see live transcription...')}
           </div>
         </div>
