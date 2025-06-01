@@ -10,6 +10,8 @@ export function RecordingApp({}: RecordingAppProps) {
   const [currentInterimTranscript, setCurrentInterimTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -31,8 +33,23 @@ export function RecordingApp({}: RecordingAppProps) {
       setCompletedTranscriptSegments([]);
       setCurrentInterimTranscript('');
       setTranscription('🟢 Connected. Start speaking...');
+      setProcessingProgress(0);
     }
   }, [isRecording]);
+
+  // Cleanup processing interval when component unmounts or processing ends
+  useEffect(() => {
+    if (!isProcessing && processingIntervalRef.current) {
+      clearInterval(processingIntervalRef.current);
+      processingIntervalRef.current = null;
+      setProcessingProgress(0);
+    }
+    return () => {
+      if (processingIntervalRef.current) {
+        clearInterval(processingIntervalRef.current);
+      }
+    };
+  }, [isProcessing]);
 
   const cleanup = (isStoppingRecording = false) => {
     console.log('🧹 Starting cleanup...', isStoppingRecording ? '(stopping recording)' : '(full cleanup)');
@@ -107,6 +124,18 @@ export function RecordingApp({}: RecordingAppProps) {
 
     setIsRecording(false);
     setIsProcessing(true); 
+    setProcessingProgress(0);
+    
+    // Start the processing progress animation
+    processingIntervalRef.current = setInterval(() => {
+      setProcessingProgress(prev => {
+        // Slow down progress as it gets higher
+        const increment = Math.max(0.5, (100 - prev) * 0.03);
+        const newProgress = Math.min(95, prev + increment);
+        return newProgress;
+      });
+    }, 150);
+
     setTranscription(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
 
     if (processorRef.current) {
@@ -203,39 +232,50 @@ export function RecordingApp({}: RecordingAppProps) {
             const message = JSON.parse(event.data as string);
             
             if (message.text !== undefined && message.is_final_utterance_segment !== undefined) {
-              console.log('📝 Received transcription segment:', message.text, 'is_final:', message.is_final_utterance_segment);
-              if (isRecordingRef.current && !isProcessing) {
-                if (message.is_final_utterance_segment) {
-                  setCompletedTranscriptSegments(prev => [...prev, message.text]);
-                  setCurrentInterimTranscript('');
-                } else {
-                  setCurrentInterimTranscript(message.text);
+                console.log('📝 Received transcription segment:', message.text, 'is_final:', message.is_final_utterance_segment);
+                if (isRecordingRef.current && !isProcessing) {
+                    if (message.is_final_utterance_segment) {
+                        setCompletedTranscriptSegments(prev => [...prev, message.text]);
+                        setCurrentInterimTranscript('');
+                    } else {
+                        setCurrentInterimTranscript(message.text);
+                    }
                 }
-              }
-            } else if (message.summary) {
+            } else if (message.summary !== undefined) {
                 console.log('📋 Received final summary');
                 setIsProcessing(false);
+                setProcessingProgress(100);
+                if (processingIntervalRef.current) {
+                    clearInterval(processingIntervalRef.current);
+                    processingIntervalRef.current = null;
+                }
                 setSummary(message.summary);
                 setTranscription(message.transcript || completedTranscriptSegments.join(' ') + (currentInterimTranscript ? ' ' + currentInterimTranscript : ''));
                 setCompletedTranscriptSegments([]);
                 setCurrentInterimTranscript('');
 
-                // Extract title from first sentence or first few words
                 const title = message.transcript?.split('.')[0]?.trim() || 'Untitled Lecture';
                 const displayTitle = title.length > 100 ? title.split(' ').slice(0, 10).join(' ') + '...' : title;
-                
-                // Update page title temporarily
                 document.title = `${displayTitle} - notez.ai`;
                 setTimeout(() => {
                     document.title = 'notez.ai';
                 }, 5000);
+
+                setTimeout(() => {
+                    setProcessingProgress(0);
+                }, 1000);
             } else if (message.error) {
                 console.error('❌ Received error from server:', message.error);
                 setIsProcessing(false);
+                setProcessingProgress(0);
+                if (processingIntervalRef.current) {
+                    clearInterval(processingIntervalRef.current);
+                    processingIntervalRef.current = null;
+                }
                 setTranscription(prev => `${prev}\n\n❌ Error: ${message.error}`);
             } else if (message.partial) {
-              console.warn('Received old "partial" message format. Updating current interim.');
-              setCurrentInterimTranscript(message.partial);
+                console.warn('Received old "partial" message format. Updating current interim.');
+                setCurrentInterimTranscript(message.partial);
             }
         } catch (error) {
             console.error('❌ Error processing WebSocket message:', error);
@@ -285,7 +325,8 @@ export function RecordingApp({}: RecordingAppProps) {
     <div style={{ 
       maxWidth: '1200px',
       margin: '0 auto',
-      padding: '20px'
+      width: '100%',
+      height: '100%'
     }}>
       <div style={{
         textAlign: 'center',
@@ -309,8 +350,10 @@ export function RecordingApp({}: RecordingAppProps) {
 
       <div style={{ 
         display: 'flex', 
-        justifyContent: 'center', 
-        marginBottom: '30px' 
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '15px',
+        marginBottom: '30px'
       }}>
         <button 
           onClick={handleToggleRecording} 
@@ -339,12 +382,51 @@ export function RecordingApp({}: RecordingAppProps) {
           </span>
           {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? 'Stop Recording' : 'Start Recording')}
         </button>
+
+        {isProcessing && (
+          <div style={{
+            width: '300px',
+            position: 'relative',
+            height: '40px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div className="loading-bar" style={{
+              width: '100%',
+              height: '4px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              position: 'relative'
+            }} />
+            <div style={{
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span style={{ 
+                display: 'inline-block',
+                width: '6px',
+                height: '6px',
+                backgroundColor: '#5658f5',
+                borderRadius: '50%',
+                animation: 'pulse 1s infinite'
+              }} />
+              Processing your lecture...
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '30px' 
+        gridTemplateColumns: isRecordingRef.current ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', 
+        gap: '30px',
+        transition: 'all 0.3s ease'
       }}>
         <div style={{ 
           background: 'rgba(255, 255, 255, 0.03)',
@@ -394,42 +476,44 @@ export function RecordingApp({}: RecordingAppProps) {
           </div>
         </div>
 
-        <div style={{ 
-          background: 'rgba(255, 255, 255, 0.03)',
-          borderRadius: '16px',
-          padding: '25px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          minHeight: '300px',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <h2 style={{ 
-            color: '#fff',
-            fontSize: '1.5rem',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <span>✨</span> AI Summary
-          </h2>
+        {!isRecordingRef.current && (
           <div style={{ 
-            flex: 1,
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderRadius: '10px',
-            padding: '20px',
-            fontSize: '1rem',
-            lineHeight: '1.6',
-            color: 'rgba(255, 255, 255, 0.8)',
-            overflowY: 'auto',
-            whiteSpace: 'pre-wrap',
-            wordWrap: 'break-word'
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '16px',
+            padding: '25px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            minHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
-            {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
+            <h2 style={{ 
+              color: '#fff',
+              fontSize: '1.5rem',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <span>✨</span> AI Summary
+            </h2>
+            <div style={{ 
+              flex: 1,
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '10px',
+              padding: '20px',
+              fontSize: '1rem',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.8)',
+              overflowY: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
+            }}>
+              {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will appear here after recording...')}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <style>{`
         .record-button:not(:disabled):hover {
@@ -440,6 +524,33 @@ export function RecordingApp({}: RecordingAppProps) {
           0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(100, 108, 255, 0.7); }
           70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(100, 108, 255, 0); }
           100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(100, 108, 255, 0); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes pulse {
+          0% { opacity: 0.4; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .loading-bar::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            #5658f5,
+            #8c8eff,
+            #5658f5,
+            transparent
+          );
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite linear;
         }
       `}</style>
     </div>
