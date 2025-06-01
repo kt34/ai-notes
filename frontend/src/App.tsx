@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { RecordPage } from './pages/RecordPage';

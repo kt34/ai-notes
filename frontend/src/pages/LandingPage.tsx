@@ -1,10 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { LandingNavBar } from '../components/LandingNavBar';
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   return (
     <div style={{

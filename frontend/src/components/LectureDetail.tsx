@@ -188,16 +188,6 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     </div>
   );
 
-  const ListItem = ({ children }: { children: React.ReactNode }) => (
-    <li style={{
-      color: 'rgba(255, 255, 255, 0.8)',
-      marginBottom: '0.5rem',
-      lineHeight: '1.5'
-    }}>
-      {children}
-    </li>
-  );
-
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <div style={{ marginBottom: '2rem' }}>

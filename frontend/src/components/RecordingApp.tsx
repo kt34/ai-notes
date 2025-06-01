@@ -11,7 +11,7 @@ export function RecordingApp({}: RecordingAppProps) {
   const [currentInterimTranscript, setCurrentInterimTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState(0);
+  const [_, setProcessingProgress] = useState(0);
   const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
