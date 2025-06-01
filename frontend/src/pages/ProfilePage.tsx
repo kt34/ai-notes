@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { config } from '../config';
 
 interface UserStats {
   total_lectures: number;
@@ -17,7 +18,7 @@ export function ProfilePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:8000/user/stats', {
+        const response = await fetch(`${config.apiUrl}/user/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
