@@ -237,15 +237,21 @@ async def websocket_transcribe(ws: WebSocket):
 
                 db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
                 print(f"Data insertion response: {db_response}")
+                
+                # Get the lecture ID from the response
+                lecture_id = db_response.data[0]['id'] if db_response.data else None
+
             else:
                 print(f"Skipping DB insert for transcript: '{transcript}' or due to summary error.")
+                lecture_id = None
 
             # Ensure summary and full transcript are sent if connection is still open
             if ws.client_state == WebSocketState.CONNECTED:
                 try:
                     await ws.send_text(json.dumps({
                         "summary": summary,
-                        "transcript": transcript 
+                        "transcript": transcript,
+                        "lecture_id": lecture_id
                     }))
                     print("Summary and final transcript sent successfully.")
                 except Exception as e:

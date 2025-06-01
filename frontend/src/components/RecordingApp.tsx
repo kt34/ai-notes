@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export interface RecordingAppProps {}
 
@@ -12,6 +13,7 @@ export function RecordingApp({}: RecordingAppProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const navigate = useNavigate();
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -249,11 +251,13 @@ export function RecordingApp({}: RecordingAppProps) {
                     clearInterval(processingIntervalRef.current);
                     processingIntervalRef.current = null;
                 }
-                setSummary(message.summary);
-                setTranscription(message.transcript || completedTranscriptSegments.join(' ') + (currentInterimTranscript ? ' ' + currentInterimTranscript : ''));
-                setCompletedTranscriptSegments([]);
-                setCurrentInterimTranscript('');
 
+                // Extract the lecture ID from the response and redirect immediately
+                if (message.lecture_id) {
+                    navigate(`/lectures/${message.lecture_id}`);
+                }
+
+                // Update the document title temporarily
                 const title = message.transcript?.split('.')[0]?.trim() || 'Untitled Lecture';
                 const displayTitle = title.length > 100 ? title.split(' ').slice(0, 10).join(' ') + '...' : title;
                 document.title = `${displayTitle} - notez.ai`;
@@ -261,9 +265,6 @@ export function RecordingApp({}: RecordingAppProps) {
                     document.title = 'notez.ai';
                 }, 5000);
 
-                setTimeout(() => {
-                    setProcessingProgress(0);
-                }, 1000);
             } else if (message.error) {
                 console.error('❌ Received error from server:', message.error);
                 setIsProcessing(false);

@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
       const storedRefreshToken = localStorage.getItem('refreshToken');
       
       if (storedToken && storedRefreshToken) {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(refreshedUserData);
                 setToken(data.access_token);
               }
-            } else {
+    } else {
               // If refresh fails, clear everything
               handleLogout();
             }
@@ -97,10 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+      localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
-    setToken(null);
-    setUser(null);
+      setToken(null);
+      setUser(null);
   };
 
   const login = async (email: string, password: string) => {
