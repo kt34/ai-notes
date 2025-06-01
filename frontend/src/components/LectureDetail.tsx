@@ -8,10 +8,19 @@ interface LectureDetailProps {
 
 interface Lecture {
   id: string;
-  created_at: string;
+  user_id: string;
   transcript: string;
   summary: string;
-  title: string;
+  created_at: string;
+  updated_at: string;
+  lecture_title: string;
+  topic_summary_sentence: string;
+  key_concepts: string[];
+  main_points_covered: string[];
+  examples_mentioned: string[];
+  important_quotes: string[];
+  conclusion_takeaways: string;
+  references: string[];
 }
 
 export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
@@ -103,6 +112,32 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     );
   }
 
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <h3 style={{ 
+      color: '#fff',
+      fontSize: '1.2rem',
+      marginBottom: '1rem',
+      marginTop: '1.5rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      paddingBottom: '0.5rem'
+    }}>
+      {children}
+    </h3>
+  );
+
+  const ListItem = ({ children }: { children: React.ReactNode }) => (
+    <li style={{
+      color: 'rgba(255, 255, 255, 0.8)',
+      marginBottom: '0.5rem',
+      lineHeight: '1.5'
+    }}>
+      {children}
+    </li>
+  );
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <div style={{ marginBottom: '2rem' }}>
@@ -135,7 +170,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
 
       <div style={{ 
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gridTemplateColumns: '1fr',
         gap: '2rem'
       }}>
         <div style={{ 
@@ -146,62 +181,150 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           backdropFilter: 'blur(8px)'
         }}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ 
+            <h1 style={{ 
               color: '#fff',
-              fontSize: '1.5rem',
-              marginBottom: '0.5rem'
+              fontSize: '2rem',
+              marginBottom: '0.5rem',
+              background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
             }}>
-              {lecture.title || `Untitled Lecture #${lecture.id.slice(0, 8)}`}
-            </h2>
+              {lecture.lecture_title}
+            </h1>
             <div style={{ 
               color: 'rgba(255, 255, 255, 0.6)',
               fontSize: '0.875rem',
               display: 'flex',
-              gap: '1rem'
+              gap: '1rem',
+              marginBottom: '1rem'
             }}>
               <span>{formatDate(lecture.created_at)}</span>
               <span>•</span>
               <span>{calculateReadingTime(lecture.transcript)}</span>
             </div>
+            <p style={{
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontSize: '1.1rem',
+              lineHeight: '1.6',
+              padding: '1rem',
+              background: 'rgba(86, 88, 245, 0.1)',
+              borderRadius: '8px',
+              border: '1px solid rgba(86, 88, 245, 0.2)'
+            }}>
+              {lecture.topic_summary_sentence}
+            </p>
           </div>
 
-          <div style={{
-            color: 'rgba(255, 255, 255, 0.8)',
-            fontSize: '1rem',
-            lineHeight: '1.6',
-            whiteSpace: 'pre-wrap'
-          }}>
-            {lecture.transcript}
-          </div>
-        </div>
-
-        <div style={{ 
-          background: 'rgba(255, 255, 255, 0.03)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(8px)',
-          height: 'fit-content',
-          position: 'sticky',
-          top: '2rem'
-        }}>
-          <h2 style={{ 
-            color: '#fff',
-            fontSize: '1.5rem',
-            marginBottom: '1.5rem',
+          <SectionTitle>✨ Key Concepts</SectionTitle>
+          <ul style={{ 
+            listStyle: 'none', 
+            padding: 0,
             display: 'flex',
-            alignItems: 'center',
+            flexWrap: 'wrap',
             gap: '0.5rem'
           }}>
-            <span>✨</span> Summary
-          </h2>
+            {lecture.key_concepts.map((concept, index) => (
+              <li key={index} style={{
+                background: 'rgba(86, 88, 245, 0.1)',
+                border: '1px solid rgba(86, 88, 245, 0.2)',
+                padding: '0.5rem 1rem',
+                borderRadius: '20px',
+                color: 'rgba(255, 255, 255, 0.8)',
+                fontSize: '0.9rem'
+              }}>
+                {concept}
+              </li>
+            ))}
+          </ul>
+
+          <SectionTitle>📝 Main Points</SectionTitle>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {lecture.main_points_covered.map((point, index) => (
+              <ListItem key={index}>{point}</ListItem>
+            ))}
+          </ul>
+
+          <SectionTitle>💡 Examples</SectionTitle>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {lecture.examples_mentioned.map((example, index) => (
+              <ListItem key={index}>{example}</ListItem>
+            ))}
+          </ul>
+
+          <SectionTitle>💬 Important Quotes</SectionTitle>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {lecture.important_quotes.map((quote, index) => (
+              <div key={index} style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '0.75rem',
+                borderLeft: '3px solid rgba(86, 88, 245, 0.5)',
+                color: 'rgba(255, 255, 255, 0.8)',
+                fontStyle: 'italic'
+              }}>
+                {quote}
+              </div>
+            ))}
+          </ul>
+
+          <SectionTitle>🎯 Conclusion</SectionTitle>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.8)',
+            lineHeight: '1.6',
+            padding: '1rem',
+            background: 'rgba(86, 88, 245, 0.1)',
+            borderRadius: '8px',
+            border: '1px solid rgba(86, 88, 245, 0.2)'
+          }}>
+            {lecture.conclusion_takeaways}
+          </p>
+
+          {lecture.references.length > 0 && (
+            <>
+              <SectionTitle>📚 References</SectionTitle>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                {lecture.references.map((ref, index) => (
+                  <li key={index} style={{
+                    marginBottom: '0.5rem'
+                  }}>
+                    <a 
+                      href={ref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#646cff',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#8c8eff';
+                        e.currentTarget.style.textDecoration = 'underline';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#646cff';
+                        e.currentTarget.style.textDecoration = 'none';
+                      }}
+                    >
+                      {ref}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          <SectionTitle>📄 Full Transcript</SectionTitle>
           <div style={{
             color: 'rgba(255, 255, 255, 0.8)',
             fontSize: '1rem',
             lineHeight: '1.6',
-            whiteSpace: 'pre-wrap'
+            whiteSpace: 'pre-wrap',
+            padding: '1rem',
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderRadius: '8px'
           }}>
-            {lecture.summary}
+            {lecture.transcript}
           </div>
         </div>
       </div>

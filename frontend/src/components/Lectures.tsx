@@ -4,10 +4,18 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface Lecture {
   id: string;
-  created_at: string;
+  user_id: string;
   transcript: string;
-  summary: string;
-  title: string;
+  created_at: string;
+  updated_at: string;
+  lecture_title: string;
+  topic_summary_sentence: string;
+  key_concepts: string[];
+  main_points_covered: string[];
+  examples_mentioned: string[];
+  important_quotes: string[];
+  conclusion_takeaways: string;
+  references: string[];
 }
 
 export function Lectures() {
@@ -49,23 +57,12 @@ export function Lectures() {
     return `${minutes} min read`;
   };
 
-  const getPreview = (text: string, maxLength = 150) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + '...';
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  const countKeyPoints = (summary: string) => {
-    // Count bullet points or numbered items in the summary
-    const bulletPoints = (summary.match(/[•\-\*]|\d+\./g) || []).length;
-    return bulletPoints || 1; // Return at least 1 if no bullet points found
   };
 
   if (isLoading) {
@@ -171,7 +168,7 @@ export function Lectures() {
                 color: '#646cff'
               }}>
                 <span>✨</span>
-                {countKeyPoints(lecture.summary)} key points
+                {lecture.key_concepts.length} key concepts
               </div>
             </div>
 
@@ -180,26 +177,72 @@ export function Lectures() {
                 color: '#fff',
                 fontSize: '1.25rem',
                 marginBottom: '0.5rem',
-                fontWeight: '600'
+                fontWeight: '600',
+                background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
               }}>
-                {lecture.title || `Untitled Lecture #${lecture.id.slice(0, 8)}`}
+                {lecture.lecture_title}
               </h3>
               <p style={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
+                color: 'rgba(255, 255, 255, 0.8)',
                 fontSize: '0.875rem',
-                lineHeight: '1.5'
+                lineHeight: '1.5',
+                marginBottom: '1rem'
               }}>
-                {getPreview(lecture.transcript)}
+                {lecture.topic_summary_sentence}
               </p>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+                marginBottom: '1rem'
+              }}>
+                {lecture.key_concepts.slice(0, 3).map((concept, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      background: 'rgba(86, 88, 245, 0.1)',
+                      border: '1px solid rgba(86, 88, 245, 0.2)',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '12px',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    {concept}
+                  </span>
+                ))}
+                {lecture.key_concepts.length > 3 && (
+                  <span style={{
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    fontSize: '0.75rem',
+                    padding: '0.25rem 0'
+                  }}>
+                    +{lecture.key_concepts.length - 3} more
+                  </span>
+                )}
+              </div>
             </div>
 
             <div style={{
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               color: 'rgba(255, 255, 255, 0.4)',
-              fontSize: '0.75rem'
+              fontSize: '0.75rem',
+              marginTop: 'auto'
             }}>
-              {calculateReadingTime(lecture.transcript)}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span>📝 {lecture.main_points_covered.length} points</span>
+                <span>•</span>
+                <span>💬 {lecture.important_quotes.length} quotes</span>
+              </div>
+              <span>{calculateReadingTime(lecture.transcript)}</span>
             </div>
           </div>
         ))}
