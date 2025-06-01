@@ -206,7 +206,10 @@ async def websocket_transcribe(ws: WebSocket):
         try:
             # Generate summary
             summary = summarizer.summarize(transcript) # This can take time
-            print("\nChatGPT Summary: " + summary)
+            print("\nChatGPT Full Summary: " + summary)
+
+            structured_summary_data = summarizer.parse_structured_summary(summary)
+            print("\nParsed Structured Summary Data:\n", structured_summary_data)
 
             # Store in DB
             # Define conditions for not storing, e.g., very short or error messages
@@ -217,16 +220,22 @@ async def websocket_transcribe(ws: WebSocket):
             # Also consider not storing if summary indicates an error.
             if transcript.strip() and transcript not in skippable_transcripts and "Error generating summary" not in summary:
                 # Extract a title from the first sentence or first N words
-                title = transcript.split('.')[0].strip()
-                if len(title) > 100:  # If first sentence is too long, take first few words
-                    title = ' '.join(title.split()[:10]) + '...'
                 
-                db_response = supabase.table("lectures").insert({
+                lecture_data_to_insert = {
                     "user_id": user_id,
                     "transcript": transcript,
-                    "summary": summary,
-                    "title": title
-                }).execute()
+                    "summary": summary, 
+                    "lecture_title": structured_summary_data.get("lecture_title"),
+                    "topic_summary_sentence": structured_summary_data.get("topic_summary_sentence"),
+                    "key_concepts": structured_summary_data.get("key_concepts"), # This will be a list or []
+                    "main_points_covered": structured_summary_data.get("main_points_covered"), # This will be a list or []
+                    "examples_mentioned": structured_summary_data.get("examples_mentioned"), # This will be a list or []
+                    "important_quotes": structured_summary_data.get("important_quotes"), # Still text, or list if you changed it
+                    "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"), # Still text
+                    "references": structured_summary_data.get("references"), # This will be a list or []
+                }
+
+                db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
                 print(f"Data insertion response: {db_response}")
             else:
                 print(f"Skipping DB insert for transcript: '{transcript}' or due to summary error.")
