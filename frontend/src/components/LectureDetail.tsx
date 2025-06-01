@@ -373,7 +373,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                     top: '-8px',
                     color: 'rgba(140, 142, 255, 0.6)',
                     fontSize: '1.5rem'
-                  }}>"</span>
+                  }}></span>
                   {quote}
                 </div>
               ))}
