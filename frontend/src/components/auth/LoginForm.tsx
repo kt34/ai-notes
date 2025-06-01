@@ -15,8 +15,8 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       await login(email, password);
-      // Get the redirect path from location state, or default to '/'
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+      // Get the redirect path from location state, or default to '/record'
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/record';
       navigate(from, { replace: true });
     } catch (err) {
       // Error is handled by the auth context

@@ -59,8 +59,8 @@ export function NavBar() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <div className="nav-links">
           <button 
-            onClick={() => navigate('/')}
-            className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
+            onClick={() => navigate('/record')}
+            className={`nav-link ${location.pathname === '/record' ? 'active' : ''}`}
           >
             Record
           </button>
