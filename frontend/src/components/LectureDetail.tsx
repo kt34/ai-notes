@@ -210,7 +210,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               padding: '1rem',
               background: 'rgba(86, 88, 245, 0.1)',
               borderRadius: '8px',
-              border: '1px solid rgba(86, 88, 245, 0.2)'
+              border: '1px solid rgba(86, 88, 245, 0.2)',
+              textAlign: 'left'
             }}>
               {lecture.topic_summary_sentence}
             </p>
@@ -222,7 +223,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             padding: 0,
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '0.5rem'
+            gap: '0.75rem'
           }}>
             {lecture.key_concepts && lecture.key_concepts.length > 0 ? (
               lecture.key_concepts.map((concept, index) => (
@@ -232,8 +233,12 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                   padding: '0.5rem 1rem',
                   borderRadius: '20px',
                   color: 'rgba(255, 255, 255, 0.8)',
-                  fontSize: '0.9rem'
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
+                  <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>•</span>
                   {concept}
                 </li>
               ))
@@ -241,7 +246,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               <div style={{
                 color: 'rgba(255, 255, 255, 0.6)',
                 fontStyle: 'italic',
-                padding: '0.5rem'
+                padding: '0.5rem',
+                textAlign: 'left'
               }}>
                 No key concepts identified for this lecture
               </div>
@@ -249,16 +255,48 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           </ul>
 
           <SectionTitle>📝 Main Points</SectionTitle>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <ul style={{ 
+            listStyle: 'none', 
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem'
+          }}>
             {lecture.main_points_covered && lecture.main_points_covered.length > 0 ? (
               lecture.main_points_covered.map((point, index) => (
-                <ListItem key={index}>{point}</ListItem>
+                <li key={index} style={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  padding: '0.75rem 1rem',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  borderRadius: '8px',
+                  lineHeight: '1.5',
+                  textAlign: 'left',
+                  display: 'flex',
+                  gap: '1rem',
+                  alignItems: 'flex-start'
+                }}>
+                  <span style={{ 
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    minWidth: '24px',
+                    height: '24px',
+                    background: 'rgba(86, 88, 245, 0.1)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.8rem'
+                  }}>
+                    {index + 1}
+                  </span>
+                  {point}
+                </li>
               ))
             ) : (
               <div style={{
                 color: 'rgba(255, 255, 255, 0.6)',
                 fontStyle: 'italic',
-                padding: '0.5rem'
+                padding: '0.5rem',
+                textAlign: 'left'
               }}>
                 No main points were extracted from this lecture
               </div>
@@ -266,16 +304,43 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           </ul>
 
           <SectionTitle>💡 Examples</SectionTitle>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <ul style={{ 
+            listStyle: 'none', 
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem'
+          }}>
             {lecture.examples_mentioned && lecture.examples_mentioned.length > 0 ? (
               lecture.examples_mentioned.map((example, index) => (
-                <ListItem key={index}>{example}</ListItem>
+                <li key={index} style={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  padding: '0.75rem 1rem',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  borderRadius: '8px',
+                  lineHeight: '1.5',
+                  textAlign: 'left',
+                  display: 'flex',
+                  gap: '1rem',
+                  alignItems: 'flex-start',
+                  borderLeft: '3px solid rgba(86, 88, 245, 0.3)'
+                }}>
+                  <span style={{ 
+                    color: '#8c8eff',
+                    fontSize: '1.1rem',
+                    opacity: 0.8
+                  }}>
+                    →
+                  </span>
+                  {example}
+                </li>
               ))
             ) : (
               <div style={{
                 color: 'rgba(255, 255, 255, 0.6)',
                 fontStyle: 'italic',
-                padding: '0.5rem'
+                padding: '0.5rem',
+                textAlign: 'left'
               }}>
                 No specific examples were mentioned in this lecture
               </div>
@@ -284,17 +349,31 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
 
           <SectionTitle>💬 Important Quotes</SectionTitle>
           {lecture.important_quotes && lecture.important_quotes.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul style={{ 
+              listStyle: 'none', 
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
               {lecture.important_quotes.map((quote, index) => (
                 <div key={index} style={{
                   background: 'rgba(255, 255, 255, 0.03)',
-                  padding: '1rem',
+                  padding: '1rem 1.25rem',
                   borderRadius: '8px',
-                  marginBottom: '0.75rem',
                   borderLeft: '3px solid rgba(86, 88, 245, 0.5)',
                   color: 'rgba(255, 255, 255, 0.8)',
-                  fontStyle: 'italic'
+                  fontStyle: 'italic',
+                  textAlign: 'left',
+                  position: 'relative'
                 }}>
+                  <span style={{
+                    position: 'absolute',
+                    left: '-2px',
+                    top: '-8px',
+                    color: 'rgba(140, 142, 255, 0.6)',
+                    fontSize: '1.5rem'
+                  }}>"</span>
                   {quote}
                 </div>
               ))}
@@ -303,7 +382,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             <div style={{
               color: 'rgba(255, 255, 255, 0.6)',
               fontStyle: 'italic',
-              padding: '0.5rem'
+              padding: '0.5rem',
+              textAlign: 'left'
             }}>
               No notable quotes were captured from this lecture
             </div>
@@ -317,7 +397,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               padding: '1rem',
               background: 'rgba(86, 88, 245, 0.1)',
               borderRadius: '8px',
-              border: '1px solid rgba(86, 88, 245, 0.2)'
+              border: '1px solid rgba(86, 88, 245, 0.2)',
+              textAlign: 'left'
             }}>
               {lecture.conclusion_takeaways}
             </p>
@@ -325,7 +406,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             <div style={{
               color: 'rgba(255, 255, 255, 0.6)',
               fontStyle: 'italic',
-              padding: '0.5rem'
+              padding: '0.5rem',
+              textAlign: 'left'
             }}>
               No conclusion summary is available for this lecture
             </div>
