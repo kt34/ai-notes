@@ -20,7 +20,8 @@ export function LandingPage() {
         alignItems: 'center',
         padding: '4rem 2rem',
         textAlign: 'center',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'hidden'
       }}>
         <div style={{
           position: 'absolute',
@@ -30,7 +31,8 @@ export function LandingPage() {
           width: '100%',
           height: '100%',
           background: 'radial-gradient(circle at center, rgba(100, 108, 255, 0.08) 0%, rgba(0, 0, 0, 0) 70%)',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          animation: 'pulse 4s ease-in-out infinite'
         }} />
         
         <h1 style={{
@@ -40,7 +42,8 @@ export function LandingPage() {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           marginBottom: '1.5rem',
-          position: 'relative'
+          position: 'relative',
+          animation: 'fadeIn 1s ease-out'
         }}>
           Transform Your Lectures Into
           <br />
@@ -52,7 +55,8 @@ export function LandingPage() {
           color: 'rgba(255, 255, 255, 0.8)',
           maxWidth: '800px',
           marginBottom: '3rem',
-          lineHeight: '1.6'
+          lineHeight: '1.6',
+          animation: 'fadeIn 1s ease-out 0.2s both'
         }}>
           Record your lectures and let AI transform them into well-structured notes, complete with summaries, key points, and smart organization.
         </p>
@@ -61,7 +65,8 @@ export function LandingPage() {
           display: 'flex',
           gap: '1rem',
           justifyContent: 'center',
-          marginBottom: '4rem'
+          marginBottom: '4rem',
+          animation: 'fadeIn 1s ease-out 0.4s both'
         }}>
           <button
             onClick={() => navigate('/register')}
@@ -69,19 +74,21 @@ export function LandingPage() {
               padding: '1rem 2.5rem',
               fontSize: '1.125rem',
               fontWeight: '600',
-              background: '#646cff',
+              background: 'linear-gradient(120deg, #646cff, #8c8eff)',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 20px rgba(100, 108, 255, 0.3)'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 20px rgba(100, 108, 255, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
             }}
-            onMouseOver={(e) => {
+            onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(100, 108, 255, 0.4)';
+              e.currentTarget.style.boxShadow = '0 8px 30px rgba(100, 108, 255, 0.5)';
             }}
-            onMouseOut={(e) => {
+            onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.boxShadow = '0 4px 20px rgba(100, 108, 255, 0.3)';
             }}
@@ -101,8 +108,21 @@ export function LandingPage() {
           backdropFilter: 'blur(8px)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
           position: 'relative',
-          overflow: 'hidden'
-        }}>
+          overflow: 'hidden',
+          transition: 'all 0.3s ease',
+          animation: 'fadeIn 1s ease-out 0.6s both'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-5px)';
+          e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'none';
+          e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
+          e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+        }}
+        >
           <div style={{
             position: 'absolute',
             top: 0,
@@ -119,7 +139,8 @@ export function LandingPage() {
               width: '100%',
               height: 'auto',
               borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              transition: 'all 0.3s ease'
             }}
           />
         </div>
@@ -229,6 +250,38 @@ export function LandingPage() {
           Get Started Free
         </button>
       </section>
+
+      {/* Add new styles */}
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.95); }
+          50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.95); }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .feature-card-glow {
+          opacity: 0;
+        }
+
+        div:hover .feature-card-glow {
+          opacity: 1;
+        }
+
+        div:hover .feature-card-icon {
+          transform: scale(1.1);
+        }
+      `}</style>
     </div>
   );
 }
@@ -241,24 +294,59 @@ function FeatureCard({ icon, title, description }: { icon: string; title: string
       borderRadius: '16px',
       border: '1px solid rgba(255, 255, 255, 0.1)',
       backdropFilter: 'blur(8px)',
-      transition: 'all 0.2s ease'
-    }}>
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-8px)';
+      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+      e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+      e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'none';
+      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+      e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+    >
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'radial-gradient(circle at 50% 0%, rgba(86, 88, 245, 0.15), transparent 70%)',
+        opacity: 0,
+        transition: 'opacity 0.3s ease',
+        pointerEvents: 'none'
+      }}
+      className="feature-card-glow"
+      />
       <div style={{
         fontSize: '2.5rem',
-        marginBottom: '1rem'
-      }}>
+        marginBottom: '1rem',
+        transition: 'transform 0.3s ease'
+      }}
+      className="feature-card-icon"
+      >
         {icon}
       </div>
       <h3 style={{ 
         fontSize: '1.5rem', 
         marginBottom: '1rem',
-        color: '#646cff'
+        background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        transition: 'all 0.3s ease'
       }}>
         {title}
       </h3>
       <p style={{ 
         color: 'rgba(255, 255, 255, 0.7)',
-        lineHeight: '1.6'
+        lineHeight: '1.6',
+        transition: 'color 0.3s ease'
       }}>
         {description}
       </p>
