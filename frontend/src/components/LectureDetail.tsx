@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { config } from '../config';
 
 interface LectureDetailProps {
   lectureId: string;
@@ -84,7 +85,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   useEffect(() => {
     const fetchLecture = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/lectures/${lectureId}`, {
+        const response = await fetch(`${config.apiUrl}/lectures/${lectureId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

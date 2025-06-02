@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { config } from '../config';
 
 interface Lecture {
   id: string;
@@ -28,7 +29,7 @@ export function Lectures() {
   useEffect(() => {
     const fetchLectures = async () => {
       try {
-        const response = await fetch('http://localhost:8000/lectures', {
+        const response = await fetch(`${config.apiUrl}/lectures`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

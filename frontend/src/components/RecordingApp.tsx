@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { config } from '../config';
 
 export interface RecordingAppProps {}
 
@@ -25,7 +26,7 @@ export function RecordingApp({}: RecordingAppProps) {
   const isRecordingRef = useRef(isRecording);
 
   const { token } = useAuth();
-  const backendUrl = `ws://localhost:8000/ws/transcribe?token=${token}`;
+  const backendUrl = `${config.apiUrl.replace('http', 'ws')}/ws/transcribe?token=${token}`;
 
   // Update the ref whenever the isRecording state changes
   useEffect(() => {
