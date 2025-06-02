@@ -5,16 +5,18 @@ export function TermsPage() {
     <div style={{
       maxWidth: '800px',
       margin: '0 auto',
-      padding: '3rem 2rem',
+      padding: '2rem',
       color: '#fff',
       background: '#1a1a2e',
       minHeight: '100vh'
     }}>
       <Link to="/register" style={{
+        position: 'fixed',
+        top: '2rem',
+        left: '2rem',
         display: 'inline-flex',
         alignItems: 'center',
         gap: '0.5rem',
-        marginBottom: '3rem',
         color: '#646cff',
         textDecoration: 'none',
         fontSize: '0.95rem',
@@ -32,189 +34,128 @@ export function TermsPage() {
       
       <div style={{
         background: 'rgba(255, 255, 255, 0.03)',
-        borderRadius: '16px',
-        padding: '3rem',
+        borderRadius: '12px',
+        padding: '2.5rem',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)'
+        marginTop: '5rem'
       }}>
         <h1 style={{ 
-          marginBottom: '3rem',
-          fontSize: '2.5rem',
-          background: 'linear-gradient(120deg, #646cff, #8c8eff)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          textAlign: 'center'
-        }}>Terms and Conditions</h1>
+          marginBottom: '2.5rem',
+          fontSize: '2rem',
+          color: '#fff',
+          textAlign: 'left'
+        }}>Terms of Service</h1>
+
+        <p style={{
+          color: 'rgba(255, 255, 255, 0.7)',
+          marginBottom: '2rem',
+          lineHeight: '1.6'
+        }}>
+          Last Updated: April 15, 2024
+        </p>
         
         <div style={{ 
           display: 'flex',
           flexDirection: 'column',
-          gap: '2.5rem'
+          gap: '2rem'
         }}>
           <section>
             <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
+              fontSize: '1.25rem',
+              color: '#fff',
               marginBottom: '1rem'
-            }}>1. Acceptance of Terms</h2>
+            }}>Service Overview</h2>
             <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>By accessing and using notez.ai, you agree to be bound by these Terms and Conditions and our Privacy Policy. If you do not agree to these terms, please do not use our service.</p>
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.7)'
+            }}>notez.ai provides AI-powered lecture recording, transcription, and note-taking services. By using our service, you agree to these terms and our Privacy Policy.</p>
           </section>
 
           <section>
             <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
+              fontSize: '1.25rem',
+              color: '#fff',
               marginBottom: '1rem'
-            }}>2. Service Description</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>notez.ai provides an AI-powered lecture recording and note-taking service. The service includes real-time transcription, summarization, and organization of lecture content.</p>
-          </section>
-
-          <section>
-            <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
-              marginBottom: '1rem'
-            }}>3. User Accounts</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>You must register for an account to use our services. You are responsible for maintaining the confidentiality of your account information and for all activities under your account.</p>
-          </section>
-
-          <section>
-            <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
-              marginBottom: '1rem'
-            }}>4. User Content</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>You retain ownership of any content you create or upload to notez.ai. By using our service, you grant us a license to store, process, and analyze your content to provide and improve our services.</p>
-          </section>
-
-          <section>
-            <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
-              marginBottom: '1rem'
-            }}>5. Acceptable Use</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)',
-              marginBottom: '1rem'
-            }}>You agree not to:</p>
+            }}>User Responsibilities</h2>
             <ul style={{
               listStyle: 'none',
               padding: 0,
               margin: 0,
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem'
+              gap: '0.5rem'
             }}>
-              <li style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.8)'
-              }}>
-                <span style={{ color: '#646cff' }}>•</span>
-                Use the service for any illegal purpose
-              </li>
-              <li style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.8)'
-              }}>
-                <span style={{ color: '#646cff' }}>•</span>
-                Share your account credentials
-              </li>
-              <li style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.8)'
-              }}>
-                <span style={{ color: '#646cff' }}>•</span>
-                Attempt to gain unauthorized access to the service
-              </li>
-              <li style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.8)'
-              }}>
-                <span style={{ color: '#646cff' }}>•</span>
-                Upload content that infringes on others' rights
-              </li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Maintain account security</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Provide accurate information</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Use the service legally and responsibly</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Respect intellectual property rights</li>
             </ul>
           </section>
 
           <section>
             <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
+              fontSize: '1.25rem',
+              color: '#fff',
               marginBottom: '1rem'
-            }}>6. Service Availability</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>While we strive for high availability, we do not guarantee uninterrupted access to the service. We reserve the right to modify or discontinue features without prior notice.</p>
+            }}>Content Rights</h2>
+            <ul style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem'
+            }}>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• You retain ownership of your content</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• We process content to provide services</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• You grant us license to store and analyze content</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• We respect your content privacy</li>
+            </ul>
           </section>
 
           <section>
             <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
+              fontSize: '1.25rem',
+              color: '#fff',
               marginBottom: '1rem'
-            }}>7. Intellectual Property</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>The service, including its software, design, and content created by us, is protected by intellectual property rights and remains our property.</p>
+            }}>Prohibited Activities</h2>
+            <ul style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem'
+            }}>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Unauthorized access attempts</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Sharing account credentials</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Uploading illegal or harmful content</li>
+              <li style={{ color: 'rgba(255, 255, 255, 0.7)' }}>• Interfering with service operation</li>
+            </ul>
           </section>
 
           <section>
             <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
+              fontSize: '1.25rem',
+              color: '#fff',
               marginBottom: '1rem'
-            }}>8. Limitation of Liability</h2>
+            }}>Service Modifications</h2>
             <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>notez.ai is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the service.</p>
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.7)'
+            }}>We may modify or discontinue services with reasonable notice. We strive to maintain high availability but don't guarantee uninterrupted access.</p>
           </section>
 
           <section>
             <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
+              fontSize: '1.25rem',
+              color: '#fff',
               marginBottom: '1rem'
-            }}>9. Changes to Terms</h2>
+            }}>Contact</h2>
             <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.</p>
-          </section>
-
-          <section>
-            <h2 style={{
-              fontSize: '1.5rem',
-              color: '#646cff',
-              marginBottom: '1rem'
-            }}>10. Contact</h2>
-            <p style={{
-              lineHeight: '1.7',
-              color: 'rgba(255, 255, 255, 0.8)'
-            }}>For questions about these terms, please contact us at <a href="mailto:support@notez.ai" style={{ color: '#646cff', textDecoration: 'none' }}>support@notez.ai</a></p>
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.7)'
+            }}>For questions about these terms, contact us at <a href="mailto:support@notez.ai" style={{ color: '#646cff', textDecoration: 'none' }}>support@notez.ai</a></p>
           </section>
         </div>
       </div>
