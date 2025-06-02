@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export function RegisterForm() {
   const [email, setEmail] = useState('');
@@ -9,11 +9,16 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { register, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      clearError();
+      return;
+    }
     setIsLoading(true);
     try {
       const result = await register(email, password, fullName);
@@ -114,15 +119,77 @@ export function RegisterForm() {
           disabled={isLoading}
         />
       </div>
+      
+      <div className="form-group" style={{ marginTop: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+          <div style={{ position: 'relative', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              id="terms"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              style={{
+                cursor: 'pointer',
+                width: '18px',
+                height: '18px',
+                margin: 0,
+                opacity: 0,
+                position: 'absolute',
+                top: 0,
+                left: 0
+              }}
+            />
+            <div style={{
+              width: '18px',
+              height: '18px',
+              border: '2px solid rgba(100, 108, 255, 0.5)',
+              borderRadius: '4px',
+              backgroundColor: acceptedTerms ? '#646cff' : 'transparent',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '12px'
+            }}>
+              {acceptedTerms && '✓'}
+            </div>
+          </div>
+          <label 
+            htmlFor="terms" 
+            style={{ 
+              fontSize: '0.9rem', 
+              color: 'rgba(255, 255, 255, 0.7)',
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            I agree to the <Link to="/terms" target="_blank" style={{ color: '#646cff' }}>Terms and Conditions</Link> and{' '}
+            <Link to="/privacy" target="_blank" style={{ color: '#646cff' }}>Privacy Policy</Link>
+          </label>
+        </div>
+        {!acceptedTerms && error === null && (
+          <div style={{ 
+            color: 'rgba(255, 255, 255, 0.5)', 
+            fontSize: '0.8rem', 
+            marginTop: '0.5rem',
+            paddingLeft: 'calc(18px + 0.75rem)' // Align with text above
+          }}>
+            Please accept the terms and conditions to continue
+          </div>
+        )}
+      </div>
+
       <button 
         type="submit" 
-        disabled={isLoading}
+        disabled={isLoading || !acceptedTerms}
         style={{
           position: 'relative',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '0.5rem'
+          gap: '0.5rem',
+          opacity: !acceptedTerms ? '0.7' : '1'
         }}
       >
         {isLoading ? (
