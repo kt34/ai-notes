@@ -161,7 +161,9 @@ export function LandingPage() {
             marginBottom: '4rem',
             background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
             WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            WebkitTextFillColor: 'transparent',
+            animation: 'fadeIn 1s ease-out both',
+            opacity: 0
           }}>
             Key Features
           </h2>
@@ -171,36 +173,48 @@ export function LandingPage() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: '2rem'
           }}>
-            <FeatureCard 
-              icon="🎙️"
-              title="Real-time Transcription"
-              description="Watch your lecture transform into text in real-time with our advanced speech recognition technology."
-            />
-            <FeatureCard 
-              icon="🤖"
-              title="AI-Powered Summary"
-              description="Get instant summaries and key points from your lectures, powered by advanced AI algorithms."
-            />
-            <FeatureCard 
-              icon="📚"
-              title="Smart Organization"
-              description="Keep all your lecture notes organized and easily accessible in one place."
-            />
-            <FeatureCard 
-              icon="✨"
-              title="Beautiful Interface"
-              description="Enjoy a modern, intuitive interface designed for the best note-taking experience."
-            />
-            <FeatureCard 
-              icon="🔍"
-              title="Quick Search"
-              description="Find any lecture or specific content instantly with our powerful search feature."
-            />
-            <FeatureCard 
-              icon="📱"
-              title="Access Anywhere"
-              description="Access your notes from any device, anytime, with our cloud-based storage."
-            />
+            <div style={{ animation: 'fadeIn 1s ease-out 0.2s both' }}>
+              <FeatureCard 
+                icon="🎙️"
+                title="Real-time Transcription"
+                description="Watch your lecture transform into text in real-time with our advanced speech recognition technology."
+              />
+            </div>
+            <div style={{ animation: 'fadeIn 1s ease-out 0.3s both' }}>
+              <FeatureCard 
+                icon="🤖"
+                title="AI-Powered Summary"
+                description="Get instant summaries and key points from your lectures, powered by advanced AI algorithms."
+              />
+            </div>
+            <div style={{ animation: 'fadeIn 1s ease-out 0.4s both' }}>
+              <FeatureCard 
+                icon="📚"
+                title="Smart Organization"
+                description="Keep all your lecture notes organized and easily accessible in one place."
+              />
+            </div>
+            <div style={{ animation: 'fadeIn 1s ease-out 0.5s both' }}>
+              <FeatureCard 
+                icon="✨"
+                title="Beautiful Interface"
+                description="Enjoy a modern, intuitive interface designed for the best note-taking experience."
+              />
+            </div>
+            <div style={{ animation: 'fadeIn 1s ease-out 0.6s both' }}>
+              <FeatureCard 
+                icon="🔍"
+                title="Quick Search"
+                description="Find any lecture or specific content instantly with our powerful search feature."
+              />
+            </div>
+            <div style={{ animation: 'fadeIn 1s ease-out 0.7s both' }}>
+              <FeatureCard 
+                icon="📱"
+                title="Access Anywhere"
+                description="Access your notes from any device, anytime, with our cloud-based storage."
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -213,42 +227,53 @@ export function LandingPage() {
       }}>
         <h2 style={{
           fontSize: '2.5rem',
-          marginBottom: '1.5rem'
+          marginBottom: '1.5rem',
+          animation: 'fadeIn 1s ease-out 0.2s both',
+          opacity: 0
         }}>
           Ready to Transform Your Note-Taking?
         </h2>
         <p style={{
           fontSize: '1.25rem',
           color: 'rgba(255, 255, 255, 0.8)',
-          marginBottom: '2rem'
+          marginBottom: '2rem',
+          animation: 'fadeIn 1s ease-out 0.4s both',
+          opacity: 0
         }}>
           Join thousands of students making their study life easier with notez.ai
         </p>
-        <button
-          onClick={() => navigate('/register')}
-          style={{
-            padding: '1rem 2.5rem',
-            fontSize: '1.125rem',
-            fontWeight: '600',
-            background: '#646cff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 4px 20px rgba(100, 108, 255, 0.3)'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 8px 30px rgba(100, 108, 255, 0.4)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 20px rgba(100, 108, 255, 0.3)';
-          }}
-        >
-          Get Started Free
-        </button>
+        <div style={{
+          animation: 'fadeIn 1s ease-out 0.6s both',
+          opacity: 0
+        }}>
+          <button
+            onClick={() => navigate('/register')}
+            style={{
+              padding: '1rem 2.5rem',
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              background: 'linear-gradient(120deg, #646cff, #8c8eff)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 20px rgba(100, 108, 255, 0.3)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 30px rgba(100, 108, 255, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 20px rgba(100, 108, 255, 0.3)';
+            }}
+          >
+            Get Started Free
+          </button>
+        </div>
       </section>
 
       {/* Add new styles */}
@@ -280,6 +305,15 @@ export function LandingPage() {
 
         div:hover .feature-card-icon {
           transform: scale(1.1);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            animation-delay: 0ms !important;
+          }
         }
       `}</style>
     </div>
