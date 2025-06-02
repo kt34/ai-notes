@@ -40,7 +40,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <NavBar />
       <div className="main-content">
         {children}
-      </div>
+        </div>
     </>
   );
 }
