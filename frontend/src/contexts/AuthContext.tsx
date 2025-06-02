@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { config } from '../config';
 
 interface User {
   id: string;
@@ -29,19 +30,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
-    const storedToken = localStorage.getItem('token');
+      const storedToken = localStorage.getItem('token');
       const storedRefreshToken = localStorage.getItem('refreshToken');
       
       if (storedToken && storedRefreshToken) {
         try {
-          // First try with the stored token
           const userData = await fetchUser(storedToken);
           if (userData) {
             setUser(userData);
             setToken(storedToken);
           } else {
-            // If stored token fails, try to refresh
-            const response = await fetch('http://localhost:8000/auth/refresh', {
+            const response = await fetch(`${config.apiUrl}/auth/refresh`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -58,8 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(refreshedUserData);
                 setToken(data.access_token);
               }
-    } else {
-              // If refresh fails, clear everything
+            } else {
               handleLogout();
             }
           }
@@ -76,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const response = await fetch('http://localhost:8000/auth/me', {
+      const response = await fetch(`${config.apiUrl}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -108,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       
-      const response = await fetch('http://localhost:8000/auth/login', {
+      const response = await fetch(`${config.apiUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -124,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refreshToken', data.refresh_token);
       setToken(data.access_token);
       
-      // Fetch the complete user data after login
       const userData = await fetchUser(data.access_token);
       if (userData) {
         setUser(userData);
@@ -144,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       
-      const response = await fetch('http://localhost:8000/auth/register', {
+      const response = await fetch(`${config.apiUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, full_name })
@@ -175,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       
       if (token) {
-        await fetch('http://localhost:8000/auth/logout', {
+        await fetch(`${config.apiUrl}/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
