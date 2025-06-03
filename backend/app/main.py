@@ -7,7 +7,7 @@ from .config import settings
 from .stt import STTClient
 from .summarizer import Summarizer
 from .db import supabase, get_user_lectures
-from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user, get_authenticated_user_from_header, SupabaseUser
+from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user, get_authenticated_user_from_header, SupabaseUser, VerifyEmailRequest
 import asyncio
 
 app = FastAPI()
@@ -83,6 +83,11 @@ async def refresh_token(refresh_token: str):
         }
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
+
+@app.post("/auth/verify")
+async def verify_email_endpoint(verify_data: VerifyEmailRequest):
+    """Verify email address."""
+    return await verify_email(verify_data)
 
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):

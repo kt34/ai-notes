@@ -17,12 +17,15 @@ class AuthResponse(BaseModel):
     user_id: str
     email: str
     access_token: str
-    refresh_token: Optional[str] = None
+    refresh_token: str
 
 class RegistrationSuccessResponse(BaseModel):
     message: str
     user_id: str
     email: str
+
+class VerifyEmailRequest(BaseModel):
+    token: str
 
 class SupabaseUser(BaseModel):
     id: str
@@ -43,14 +46,16 @@ class SupabaseUser(BaseModel):
 async def register_user(user_data: UserCreate) -> AuthResponse:
     """Register a new user with Supabase Auth."""
     try:
-        # Sign up the user
+        # Sign up the user with a custom email template
         user_response = supabase.auth.sign_up({
             "email": user_data.email,
             "password": user_data.password,
             "options": {
                 "data": {
                     "full_name": user_data.full_name
-                }
+                },
+                "email_redirect_to": "http://localhost:5173/verify-email",
+                "email_template": "custom-email-template"
             }
         })
         
@@ -91,6 +96,18 @@ async def register_user(user_data: UserCreate) -> AuthResponse:
         
         raise Exception(f"Registration failed: {error_message}")
 
+async def verify_email(verify_data: VerifyEmailRequest):
+    """Verify email with token."""
+    try:
+        # Verify the email with Supabase
+        response = supabase.auth.verify_email_otp(verify_data.token)
+        return {"message": "Email verified successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
 async def login_user(user_data: UserLogin) -> AuthResponse:
     """Log in an existing user with Supabase Auth."""
     try:
@@ -114,7 +131,7 @@ def get_current_user():
 
 def logout_user():
     """Log out the current user."""
-    return supabase.auth.sign_out() 
+    return supabase.auth.sign_out()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") 
 
