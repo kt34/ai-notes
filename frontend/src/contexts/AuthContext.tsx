@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
       const storedRefreshToken = localStorage.getItem('refreshToken');
       
       if (storedToken && storedRefreshToken) {
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(refreshedUserData);
                 setToken(data.access_token);
               }
-            } else {
+    } else {
               handleLogout();
             }
           }

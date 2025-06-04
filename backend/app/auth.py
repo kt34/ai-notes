@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr, Field
 from .db import supabase
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
+from .config import settings
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -57,7 +58,7 @@ async def register_user(user_data: UserCreate) -> AuthResponse:
                 "data": {
                     "full_name": user_data.full_name
                 },
-                "email_redirect_to": "http://localhost:5173/verify-email",
+                "email_redirect_to": f"{settings.FRONTEND_URL}/verify-email",
                 "email_template": "custom-email-template"
             }
         })
@@ -173,7 +174,7 @@ async def resend_verification_email(data: ResendVerificationRequest):
         supabase.auth.resend_signup_email({
             "email": data.email,
             "options": {
-                "email_redirect_to": "http://localhost:5173/verify-email",
+                "email_redirect_to": f"{settings.FRONTEND_URL}/verify-email",
                 "email_template": "custom-email-template"
             }
         })
