@@ -27,6 +27,9 @@ class RegistrationSuccessResponse(BaseModel):
 class VerifyEmailRequest(BaseModel):
     token: str
 
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
 class SupabaseUser(BaseModel):
     id: str
     email: Optional[EmailStr] = None
@@ -161,4 +164,22 @@ async def get_authenticated_user_from_header(token: str = Depends(oauth2_scheme)
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Could not validate credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+async def resend_verification_email(data: ResendVerificationRequest):
+    """Resend verification email to user."""
+    try:
+        # Request Supabase to resend the verification email
+        supabase.auth.resend_signup_email({
+            "email": data.email,
+            "options": {
+                "email_redirect_to": "http://localhost:5173/verify-email",
+                "email_template": "custom-email-template"
+            }
+        })
+        return {"message": "Verification email sent successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
         )
