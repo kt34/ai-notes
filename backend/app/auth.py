@@ -49,6 +49,8 @@ class SupabaseUser(BaseModel):
 
 async def register_user(user_data: UserCreate) -> AuthResponse:
     """Register a new user with Supabase Auth."""
+    print(f"Registering user: {user_data.email}")
+    print(f"{settings.FRONTEND_URL}")
     try:
         # Sign up the user with a custom email template
         user_response = supabase.auth.sign_up({
