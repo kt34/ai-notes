@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { config } from '../config';
+import { apiRequest } from '../utils/api';
 
 interface UserStats {
   total_lectures: number;
   total_minutes: number;
+  total_words: number;
 }
 
 export function ProfilePage() {
@@ -18,17 +19,9 @@ export function ProfilePage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`${config.apiUrl}/user/stats`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const data = await apiRequest('/user/stats', {
+          token
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch stats');
-        }
-
-        const data = await response.json();
         setStats(data);
       } catch (error) {
         console.error('Error fetching stats:', error);

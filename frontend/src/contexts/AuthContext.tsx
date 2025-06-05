@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { config } from '../config';
+import { apiRequest, TokenExpiredError } from '../utils/api';
 
 interface User {
   id: string;
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
-    const storedToken = localStorage.getItem('token');
+      const storedToken = localStorage.getItem('token');
       const storedRefreshToken = localStorage.getItem('refreshToken');
       
       if (storedToken && storedRefreshToken) {
@@ -40,24 +41,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(userData);
             setToken(storedToken);
           } else {
-            const response = await fetch(`${config.apiUrl}/auth/refresh`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ refresh_token: storedRefreshToken }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
+            // Try to refresh the token
+            try {
+              const data = await apiRequest('/auth/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: storedRefreshToken }),
+                skipAuthRedirect: true
+              });
+              
               localStorage.setItem('token', data.access_token);
               localStorage.setItem('refreshToken', data.refresh_token);
+              
               const refreshedUserData = await fetchUser(data.access_token);
               if (refreshedUserData) {
                 setUser(refreshedUserData);
                 setToken(data.access_token);
               }
-    } else {
+            } catch (err) {
               handleLogout();
             }
           }
@@ -74,31 +75,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const response = await fetch(`${config.apiUrl}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+      const userData = await apiRequest('/auth/me', {
+        token: authToken,
+        skipAuthRedirect: true
       });
       
-      if (!response.ok) return null;
-      
-      const userData = await response.json();
       return {
         id: userData.id,
         email: userData.email,
         full_name: userData.user_metadata?.full_name || null
       };
     } catch (err) {
+      if (err instanceof TokenExpiredError) {
+        return null;
+      }
       console.error('Error fetching user:', err);
       return null;
     }
   };
 
   const handleLogout = () => {
-      localStorage.removeItem('token');
+    localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
-      setToken(null);
-      setUser(null);
+    setToken(null);
+    setUser(null);
   };
 
   const login = async (email: string, password: string) => {
@@ -106,18 +106,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       
-      const response = await fetch(`${config.apiUrl}/auth/login`, {
+      const data = await apiRequest('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
+        skipAuthRedirect: true
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Login failed');
-      }
-
-      const data = await response.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('refreshToken', data.refresh_token);
       setToken(data.access_token);
@@ -141,19 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       
-      const response = await fetch(`${config.apiUrl}/auth/register`, {
+      const data = await apiRequest('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, full_name })
+        body: JSON.stringify({ email, password, full_name }),
+        skipAuthRedirect: true
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Registration failed');
-      }
-
-      const data = await response.json();
-      console.log('Registration successful:', data);
       return {
         success: true,
         message: 'Please check your email to verify your account before logging in.'
@@ -172,11 +161,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       
       if (token) {
-        await fetch(`${config.apiUrl}/auth/logout`, {
+        await apiRequest('/auth/logout', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          token,
+          skipAuthRedirect: true
         });
       }
     } catch (err) {

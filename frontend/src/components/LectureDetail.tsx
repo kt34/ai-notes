@@ -1,27 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { config } from '../config';
-
-interface LectureDetailProps {
-  lectureId: string;
-  onBack: () => void;
-}
+import { apiRequest } from '../utils/api';
 
 interface Lecture {
   id: string;
   user_id: string;
   transcript: string;
   summary: string;
-  created_at: string;
-  updated_at: string;
   lecture_title: string;
   topic_summary_sentence: string;
   key_concepts: string[];
   main_points_covered: string[];
   examples_mentioned: string[];
   important_quotes: string[];
-  conclusion_takeaways: string;
+  conclusion_takeaways: string[];
   references: string[];
+  created_at: string;
+}
+
+interface LectureDetailProps {
+  lectureId: string;
+  onBack: () => void;
 }
 
 // Copy button component
@@ -85,21 +84,13 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   useEffect(() => {
     const fetchLecture = async () => {
       try {
-        const response = await fetch(`${config.apiUrl}/lectures/${lectureId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const data = await apiRequest(`/lectures/${lectureId}`, {
+          token
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch lecture');
-        }
-
-        const data = await response.json();
         setLecture(data);
-        setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
         setIsLoading(false);
       }
     };

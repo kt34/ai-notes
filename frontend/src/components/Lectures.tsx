@@ -2,21 +2,22 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
+import { apiRequest } from '../utils/api';
 
 interface Lecture {
   id: string;
   user_id: string;
   transcript: string;
-  created_at: string;
-  updated_at: string;
+  summary: string;
   lecture_title: string;
   topic_summary_sentence: string;
   key_concepts: string[];
   main_points_covered: string[];
   examples_mentioned: string[];
   important_quotes: string[];
-  conclusion_takeaways: string;
+  conclusion_takeaways: string[];
   references: string[];
+  created_at: string;
 }
 
 export function Lectures() {
@@ -29,21 +30,13 @@ export function Lectures() {
   useEffect(() => {
     const fetchLectures = async () => {
       try {
-        const response = await fetch(`${config.apiUrl}/lectures`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const data = await apiRequest('/lectures', {
+          token
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch lectures');
-        }
-
-        const data = await response.json();
         setLectures(data);
-        setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
         setIsLoading(false);
       }
     };
