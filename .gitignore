@@ -20,3 +20,8 @@ venv/
 
 # Ignore dump project.sh
 dump_project.sh
+
+# Audio files
+*.wav
+backend/app/*.wav
+backend/app/lecture.wav

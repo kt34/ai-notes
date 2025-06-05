@@ -8,47 +8,26 @@ class Summarizer:
         self.client = OpenAI(api_key=api_key)
 
     def _split_transcript_into_sections(self, transcript: str, max_words_per_section: int = 500) -> list[str]:
-        """Split transcript into sections based on natural breaks, lecture boundaries, and word count."""
-        # First split by lecture boundaries if they exist
-        lecture_pattern = r"Lecture \d+"
+        """Split transcript into sections based purely on word count."""
+        print("\nDEBUG: Starting section splitting...")
+        
+        # Split into words and clean up
+        words = transcript.split()
+        total_words = len(words)
+        print(f"DEBUG: Total words in transcript: {total_words}")
+        
+        # Split into sections of max_words_per_section
         sections = []
-        current_section = []
-        word_count = 0
+        for i in range(0, total_words, max_words_per_section):
+            section = ' '.join(words[i:i + max_words_per_section])
+            sections.append(section)
+            print(f"DEBUG: Added section {len(sections)} with {len(words[i:i + max_words_per_section])} words")
         
-        # Split into paragraphs first
-        paragraphs = [p.strip() for p in transcript.split('\n\n') if p.strip()]
-        
-        for paragraph in paragraphs:
-            # Check if this is a new lecture start
-            if re.match(lecture_pattern, paragraph):
-                if current_section:
-                    sections.append(' '.join(current_section))
-                    current_section = []
-                    word_count = 0
-                continue  # Skip the lecture header itself
-                
-            words = paragraph.split()
+        print(f"DEBUG: Final section count: {len(sections)}")
+        if sections:
+            avg_words = sum(len(section.split()) for section in sections) / len(sections)
+            print(f"DEBUG: Average words per section: {avg_words:.1f}")
             
-            # If adding this paragraph would exceed max words, start a new section
-            if word_count + len(words) > max_words_per_section and current_section:
-                sections.append(' '.join(current_section))
-                current_section = []
-                word_count = 0
-            
-            current_section.extend(words)
-            word_count += len(words)
-            
-            # If this paragraph ends with a strong break (., !, ?) and we have enough words,
-            # consider it a natural section break
-            if (paragraph[-1] in '.!?' and word_count >= 300) or word_count >= max_words_per_section:
-                sections.append(' '.join(current_section))
-                current_section = []
-                word_count = 0
-        
-        # Add any remaining content
-        if current_section:
-            sections.append(' '.join(current_section))
-        
         return sections
 
     def _generate_section_summary(self, section: str, section_number: int, total_sections: int) -> dict:
@@ -91,15 +70,21 @@ class Summarizer:
         if not transcript.strip():
             return "No transcript provided to summarize."
             
+        # Generate section summaries first
         sections = self._split_transcript_into_sections(transcript)
         section_summaries = []
         
+        print(f"\nGenerating summaries for {len(sections)} sections...")
         for i, section in enumerate(sections, 1):
+            print(f"Generating summary for section {i}/{len(sections)}...")
             section_summary = self._generate_section_summary(section, i, len(sections))
             section_summaries.append(section_summary)
+        print("All section summaries generated.")
 
+        # Generate the main summary without section summaries in the prompt
         overall_prompt = (
-            "You are an expert academic note-taker, tasked with creating comprehensive study notes from a lecture transcript. Your primary goal is to capture the depth and nuance of the lecture for thorough understanding and exam preparation.\n\n"
+            "You are an expert academic note-taker, tasked with creating comprehensive study notes from a lecture transcript. "
+            "Your primary goal is to capture the depth and nuance of the lecture for thorough understanding and exam preparation.\n\n"
             "Your task is to extract the key information and produce structured notes.\n\n"
             "Please organize the notes using the following EXACT section markers and instructions:\n\n"
             "@@LECTURE_TITLE_START@@\n"
@@ -124,18 +109,21 @@ class Summarizer:
             "[Write a short, yet comprehensive paragraph summarizing the main conclusions or key takeaways from the entire lecture. This should synthesize the most important information for a final review. This section should be a paragraph, not bullet points.]\n"
             "@@CONCLUSION_TAKEAWAYS_END@@\n\n"
             "@@OPTIONAL_REFERENCES_START@@\n"
-            "[List any mentioned books, articles, websites, or further reading suggestions. Use standard markdown bullets '-'. If none, state 'None'.]\n"
+            "[Provide references in the following format. Each reference MUST be a single line starting with '-' and MUST contain an actual, working URL (not placeholder text):\n\n"
+            "For academic papers:\n"
+            "- https://doi.org/[doi-number]\n\n"
+            "For online resources:\n"
+            "- https://[exact-url]\n\n"
+            "Example format:\n"
+            "- https://www.investopedia.com/terms/m/modernportfoliotheory.asp\n\n"
+            "Remember:\n"
+            "1. Each URL must be a real, working URL (not a placeholder)\n"
+            "2. Include both mentioned sources and recommended reading\n"
+            "3. If no references were mentioned, provide at least 2-3 relevant recommended resources with actual URLs\n"
+            "4. Do not use markdown link syntax [...](...)]\n"
             "@@OPTIONAL_REFERENCES_END@@\n\n"
-            "@@SECTION_SUMMARIES_START@@\n"
-            + json.dumps(section_summaries) + "\n"
-            "@@SECTION_SUMMARIES_END@@\n\n"
-            "General Note-Taking Style:\n"
-            "- The notes, especially for 'Main Points' and 'Examples Mentioned', need to be sufficiently detailed for comprehensive review. Avoid overly terse points in these sections.\n"
-            "- Ensure information is organized logically, following the lecture's flow where possible.\n"
-            "- The overall tone should be academic and informative, suitable for exam revision.\n\n"
-            "IMPORTANT FORMATTING REQUIREMENT: Even if the information for a section is minimal or the transcript seems empty, YOU MUST include all start and end markers (e.g., @@SECTION_START@@ and @@SECTION_END@@) for every section. Place 'Not available' or 'None' (as appropriate per section instructions) between the markers if applicable.\n\n"
             "Here is the lecture transcript:\n\n"
-            + transcript
+            f"{transcript}"
         )
 
         try:
@@ -144,7 +132,13 @@ class Summarizer:
                 messages=[{"role": "user", "content": overall_prompt}],
                 temperature=0.3,
             )
-            return response.choices[0].message.content
+            summary_text = response.choices[0].message.content
+
+            # Add section summaries to the summary text
+            section_summaries_json = json.dumps(section_summaries, indent=2)
+            summary_text = summary_text.rstrip() + "\n\n@@SECTION_SUMMARIES_START@@\n" + section_summaries_json + "\n@@SECTION_SUMMARIES_END@@\n"
+            
+            return summary_text
         except Exception as e:
             print(f"Error in summarization: {str(e)}")
             return f"Error generating summary: {str(e)}"

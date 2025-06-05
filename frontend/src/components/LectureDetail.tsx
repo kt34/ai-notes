@@ -487,7 +487,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
 
           {lecture.references && lecture.references.length > 0 && (
             <>
-              <SectionTitle>📚 References</SectionTitle>
+              <SectionTitle>📚 Suggested References</SectionTitle>
               <ul style={{ 
                 listStyle: 'none', 
                 padding: 0,
