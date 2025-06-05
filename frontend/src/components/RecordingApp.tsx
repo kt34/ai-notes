@@ -322,16 +322,16 @@ export function RecordingApp({}: RecordingAppProps) {
       const liveDisplay = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
       if (liveDisplay || currentInterimTranscript) {
           setTranscription(liveDisplay);
-          // Ensure scroll happens after DOM update
-          requestAnimationFrame(() => {
-            if (transcriptionContainerRef.current) {
-              const container = transcriptionContainerRef.current;
-              const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
-              if (isAtBottom) {
-                container.scrollTop = container.scrollHeight;
-              }
-            }
-          });
+          // Ensure scroll happens after DOM update - REMOVING AUTO-SCROLL LOGIC
+          // requestAnimationFrame(() => {
+          //   if (transcriptionContainerRef.current) {
+          //     const container = transcriptionContainerRef.current;
+          //     const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+          //     if (isAtBottom) {
+          //       container.scrollTop = container.scrollHeight;
+          //     }
+          //   }
+          // });
       } else if (isRecordingRef.current && transcription !== '🟢 Connected. Start speaking...' && transcription !== '🎤 Initializing microphone...' && transcription !== '🟡 Connecting to server...') {
           if (transcription === '🟢 Connected. Start speaking...' || transcription === '🎤 Initializing microphone...' || transcription === '🟡 Connecting to server...') {
           } else {
@@ -342,24 +342,15 @@ export function RecordingApp({}: RecordingAppProps) {
         const lastKnownText = [...completedTranscriptSegments, currentInterimTranscript].filter(Boolean).join(' ');
         if (lastKnownText && !transcription.includes("⏹️ Recording stopped.")) {
             setTranscription(lastKnownText);
-            // Ensure scroll happens after DOM update
-            requestAnimationFrame(() => {
-              if (transcriptionContainerRef.current) {
-                transcriptionContainerRef.current.scrollTop = transcriptionContainerRef.current.scrollHeight;
-              }
-            });
+            // Ensure scroll happens after DOM update - REMOVING AUTO-SCROLL LOGIC
+            // requestAnimationFrame(() => {
+            //   if (transcriptionContainerRef.current) {
+            //     transcriptionContainerRef.current.scrollTop = transcriptionContainerRef.current.scrollHeight;
+            //   }
+            // });
         }
     }
   }, [completedTranscriptSegments, currentInterimTranscript, isProcessing, summary, transcription]);
-
-  // Additional effect to handle auto-scrolling for status messages
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      if (transcriptionContainerRef.current) {
-        transcriptionContainerRef.current.scrollTop = transcriptionContainerRef.current.scrollHeight;
-      }
-    });
-  }, [transcription]);
 
   return (
     <div style={{ 
