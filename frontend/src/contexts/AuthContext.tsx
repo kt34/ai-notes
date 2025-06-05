@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { config } from '../config';
 import { apiRequest, TokenExpiredError } from '../utils/api';
 
 interface User {
@@ -145,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return {
         success: true,
-        message: 'Please check your email to verify your account before logging in.'
+        message: data.message || 'Please check your email to verify your account before logging in.'
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');

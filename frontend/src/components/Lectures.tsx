@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { config } from '../config';
 import { apiRequest } from '../utils/api';
 
 interface Lecture {
