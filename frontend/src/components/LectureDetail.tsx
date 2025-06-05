@@ -208,51 +208,6 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
         </button>
       </div>
 
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        borderRadius: '12px',
-        padding: '2rem',
-        marginBottom: '2rem'
-      }}>
-        <h1 style={{ 
-          color: '#fff',
-          marginTop: 0,
-          marginBottom: '1rem',
-          fontSize: '2rem'
-        }}>
-          {lecture.lecture_title}
-        </h1>
-        
-        <div style={{ 
-          display: 'flex',
-          gap: '1rem',
-          color: 'rgba(255, 255, 255, 0.6)',
-          fontSize: '0.9rem',
-          marginBottom: '1.5rem'
-        }}>
-          <span>{formatDate(lecture.created_at)}</span>
-          <span>•</span>
-          <span>{calculateReadingTime(lecture.transcript)}</span>
-        </div>
-
-        <p style={{ 
-          color: 'rgba(255, 255, 255, 0.8)',
-          fontSize: '1.1rem',
-          lineHeight: '1.6',
-          marginBottom: '2rem'
-        }}>
-          {lecture.topic_summary_sentence}
-        </p>
-      </div>
-
-      {/* Section Summaries */}
-      <div style={{ marginBottom: '2rem' }}>
-        <SectionTitle>
-          <span>Section-by-Section Breakdown</span>
-        </SectionTitle>
-        <SectionSummaries sections={lecture.section_summaries} />
-      </div>
-
       <div style={{ 
         display: 'grid',
         gridTemplateColumns: '1fr',
@@ -265,32 +220,36 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           border: '1px solid rgba(255, 255, 255, 0.1)',
           backdropFilter: 'blur(8px)'
         }}>
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '2rem' }}>
             <h1 style={{ 
               color: '#fff',
+              marginTop: 0,
+              marginBottom: '1rem',
               fontSize: '2rem',
-              marginBottom: '0.5rem',
               background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
               {lecture.lecture_title}
             </h1>
+            
             <div style={{ 
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '0.875rem',
               display: 'flex',
               gap: '1rem',
-              marginBottom: '1rem'
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontSize: '0.9rem',
+              marginBottom: '1.5rem'
             }}>
               <span>{formatDate(lecture.created_at)}</span>
               <span>•</span>
               <span>{calculateReadingTime(lecture.transcript)}</span>
             </div>
-            <p style={{
+
+            <p style={{ 
               color: 'rgba(255, 255, 255, 0.8)',
               fontSize: '1.1rem',
               lineHeight: '1.6',
+              marginBottom: '0',
               padding: '1rem',
               background: 'rgba(86, 88, 245, 0.1)',
               borderRadius: '8px',
@@ -526,10 +485,14 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             </div>
           )}
 
-          {lecture.references && lecture.references.length > 0 ? (
+          {lecture.references && lecture.references.length > 0 && (
             <>
               <SectionTitle>📚 References</SectionTitle>
-              <ul style={{ listStyle: 'none', padding: 0 }}>
+              <ul style={{ 
+                listStyle: 'none', 
+                padding: 0,
+                marginBottom: '2rem'
+              }}>
                 {lecture.references.map((ref, index) => (
                   <li key={index} style={{
                     marginBottom: '0.5rem'
@@ -558,8 +521,17 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                 ))}
               </ul>
             </>
-          ) : null}
+          )}
 
+          {/* Section-by-Section Breakdown */}
+          <div style={{ marginBottom: '2rem' }}>
+            <SectionTitle>
+              <span>📑 Section-by-Section Breakdown</span>
+            </SectionTitle>
+            <SectionSummaries sections={lecture.section_summaries} />
+          </div>
+
+          {/* Full Transcript (at the very bottom) */}
           <div style={{
             marginTop: '2rem',
             background: 'rgba(255, 255, 255, 0.03)',
@@ -617,154 +589,9 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                 fontSize: '1rem',
                 lineHeight: '1.6',
                 whiteSpace: 'pre-wrap',
-                wordWrap: 'break-word',
-                maxHeight: isTranscriptExpanded ? 'none' : '0'
+                wordWrap: 'break-word'
               }}>
-                {lecture.section_summaries && lecture.section_summaries.length > 0 ? (
-                  <div style={{ marginBottom: '2rem' }}>
-                    {lecture.section_summaries.map((section, index) => (
-                      <div 
-                        key={index}
-                        style={{
-                          marginBottom: '2rem',
-                          padding: '1.5rem',
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)'
-                        }}
-                      >
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '1rem'
-                        }}>
-                          <h4 style={{
-                            margin: 0,
-                            color: '#fff',
-                            fontSize: '1.1rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                          }}>
-                            <span style={{ color: '#646cff' }}>📍</span>
-                            {section.timestamp_marker}
-                          </h4>
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                          <p style={{
-                            margin: '0 0 1rem 0',
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            fontSize: '1rem',
-                            lineHeight: '1.6'
-                          }}>
-                            {section.summary}
-                          </p>
-                        </div>
-
-                        {section.main_topics.length > 0 && (
-                          <div style={{ marginBottom: '1rem' }}>
-                            <h5 style={{
-                              margin: '0 0 0.5rem 0',
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              fontSize: '0.9rem',
-                              fontWeight: 'normal'
-                            }}>
-                              Main Topics:
-                            </h5>
-                            <div style={{
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: '0.5rem'
-                            }}>
-                              {section.main_topics.map((topic, topicIndex) => (
-                                <span
-                                  key={topicIndex}
-                                  style={{
-                                    background: 'rgba(86, 88, 245, 0.1)',
-                                    border: '1px solid rgba(86, 88, 245, 0.2)',
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '12px',
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                    fontSize: '0.8rem'
-                                  }}
-                                >
-                                  {topic}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {section.key_points.length > 0 && (
-                          <div style={{ marginBottom: '1rem' }}>
-                            <h5 style={{
-                              margin: '0 0 0.5rem 0',
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              fontSize: '0.9rem',
-                              fontWeight: 'normal'
-                            }}>
-                              Key Points:
-                            </h5>
-                            <ul style={{
-                              margin: 0,
-                              paddingLeft: '1.2rem',
-                              color: 'rgba(255, 255, 255, 0.8)',
-                              fontSize: '0.9rem'
-                            }}>
-                              {section.key_points.map((point, pointIndex) => (
-                                <li key={pointIndex} style={{ marginBottom: '0.25rem' }}>
-                                  {point}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {section.examples && section.examples.length > 0 && (
-                          <div>
-                            <h5 style={{
-                              margin: '0 0 0.5rem 0',
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              fontSize: '0.9rem',
-                              fontWeight: 'normal'
-                            }}>
-                              Examples:
-                            </h5>
-                            <ul style={{
-                              margin: 0,
-                              paddingLeft: '1.2rem',
-                              color: 'rgba(255, 255, 255, 0.8)',
-                              fontSize: '0.9rem'
-                            }}>
-                              {section.examples.map((example, exampleIndex) => (
-                                <li key={exampleIndex} style={{ marginBottom: '0.25rem' }}>
-                                  {example}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <div style={{
-                  padding: '1rem',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: '8px',
-                  marginTop: '1rem'
-                }}>
-                  <h4 style={{
-                    margin: '0 0 1rem 0',
-                    color: '#fff',
-                    fontSize: '1rem'
-                  }}>
-                    Raw Transcript:
-                  </h4>
-                  {lecture.transcript}
-                </div>
+                {lecture.transcript}
               </div>
             </div>
           </div>
