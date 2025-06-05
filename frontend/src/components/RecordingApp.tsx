@@ -12,7 +12,8 @@ export function RecordingApp({}: RecordingAppProps) {
   const [currentInterimTranscript, setCurrentInterimTranscript] = useState('');
   const [summary, setSummary] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [_, setProcessingProgress] = useState(0);
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [processingProgress, setProcessingProgress] = useState(0);
   const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
@@ -128,17 +129,13 @@ export function RecordingApp({}: RecordingAppProps) {
 
     setIsRecording(false);
     setIsProcessing(true); 
-    setProcessingProgress(0);
+    setProcessingStatus('Finalizing recording...'); // Initial status when stopping
+    setProcessingProgress(5); // Small initial progress
     
-    // Start the processing progress animation
-    processingIntervalRef.current = setInterval(() => {
-      setProcessingProgress(prev => {
-        // Slow down progress as it gets higher
-        const increment = Math.max(0.5, (100 - prev) * 0.03);
-        const newProgress = Math.min(95, prev + increment);
-        return newProgress;
-      });
-    }, 150);
+    if (processingIntervalRef.current) {
+      clearInterval(processingIntervalRef.current);
+      processingIntervalRef.current = null;
+    }
 
     setTranscription(prev => prev + "\n\n⏹️ Recording stopped. Processing audio for summary...");
 
@@ -232,11 +229,47 @@ export function RecordingApp({}: RecordingAppProps) {
 
     socketRef.current.onmessage = (event) => {
         try {
-            console.log('📥 Received WebSocket message');
             const message = JSON.parse(event.data as string);
-            
+            console.log('📥 WebSocket Message Received:', message);
+
+            // If lecture_id is present, this is the final processing/summary message.
+            // Prioritize this for navigation.
+            if (message.lecture_id !== undefined && message.summary !== undefined) {
+                console.log('📋✅ Final Summary & Lecture ID received. Preparing to navigate.', message.lecture_id);
+
+                if (message.transcript === "No speech detected in audio") {
+                    setTranscription("❌ No speech was detected. Please try again.");
+                    cleanup(false);
+                    setIsProcessing(false);
+                    return;
+                }
+
+                const lectureId = message.lecture_id;
+                const finalTranscript = message.transcript;
+
+                document.title = `${finalTranscript?.split('.')[0]?.trim() || 'Untitled Lecture'} - notez.ai`;
+                
+                setProcessingStatus('Complete!');
+                setProcessingProgress(100);
+                
+                // Perform cleanup and set processing to false *before* navigating.
+                cleanup(false);
+                setIsProcessing(false);
+
+                console.log('🚀 Attempting navigation to lecture page:', lectureId);
+                navigate(`/lectures/${lectureId}`);
+                return; // Critical: Stop further processing after navigation is initiated.
+            }
+
+            // Handle intermediate processing status updates if no lecture_id yet.
+            if (message.processing_status !== undefined && message.progress !== undefined) {
+                console.log('📊 Intermediate Processing Status:', message.processing_status, message.progress);
+                setProcessingStatus(message.processing_status);
+                setProcessingProgress(message.progress);
+            }
+
+            // Handle live transcription text if no lecture_id yet.
             if (message.text !== undefined && message.is_final_utterance_segment !== undefined) {
-                console.log('📝 Received transcription segment:', message.text, 'is_final:', message.is_final_utterance_segment);
                 if (isRecordingRef.current && !isProcessing) {
                     if (message.is_final_utterance_segment) {
                         setCompletedTranscriptSegments(prev => [...prev, message.text]);
@@ -245,49 +278,22 @@ export function RecordingApp({}: RecordingAppProps) {
                         setCurrentInterimTranscript(message.text);
                     }
                 }
-            } else if (message.summary !== undefined) {
-                console.log('📋 Received final summary');
-                setIsProcessing(false);
-                setProcessingProgress(100);
-                if (processingIntervalRef.current) {
-                    clearInterval(processingIntervalRef.current);
-                    processingIntervalRef.current = null;
-                }
+            }
 
-                if (message.transcript === "No speech detected in audio") {
-                    setTranscription("❌ No speech was detected in the recording. Please try recording again and make sure your microphone is working properly.");
-                    return;
-                }
-
-                // Extract the lecture ID from the response and redirect immediately
-                if (message.lecture_id) {
-                    navigate(`/lectures/${message.lecture_id}`);
-                }
-
-                // Update the document title temporarily
-                const title = message.transcript?.split('.')[0]?.trim() || 'Untitled Lecture';
-                const displayTitle = title.length > 100 ? title.split(' ').slice(0, 10).join(' ') + '...' : title;
-                document.title = `${displayTitle} - notez.ai`;
-                setTimeout(() => {
-                    document.title = 'notez.ai';
-                }, 5000);
-
-            } else if (message.error) {
-                console.error('❌ Received error from server:', message.error);
+            // Handle errors sent from the backend.
+            if (message.error) {
+                console.error('❌ Server Error Message:', message.error);
+                setTranscription(prev => `${prev}\n\n❌ Error: ${message.error}`);
+                cleanup(false);
                 setIsProcessing(false);
                 setProcessingProgress(0);
-                if (processingIntervalRef.current) {
-                    clearInterval(processingIntervalRef.current);
-                    processingIntervalRef.current = null;
-                }
-                setTranscription(prev => `${prev}\n\n❌ Error: ${message.error}`);
-            } else if (message.partial) {
-                console.warn('Received old "partial" message format. Updating current interim.');
-                setCurrentInterimTranscript(message.partial);
             }
+
         } catch (error) {
             console.error('❌ Error processing WebSocket message:', error);
-            setTranscription(prev => `${prev}\n\n❌ Error processing server message: ${error instanceof Error ? error.message : String(error)}`);
+            setTranscription(prev => `${prev}\n\n❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+            cleanup(false);
+            setIsProcessing(false);
         }
     };
 
@@ -419,46 +425,61 @@ export function RecordingApp({}: RecordingAppProps) {
 
         {isProcessing && (
           <div style={{
-            width: '300px',
+            width: '100%',
+            maxWidth: '600px',
             position: 'relative',
-            height: '40px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '12px'
+            gap: '15px'
           }}>
             <div className="loading-bar" style={{
               width: '100%',
-              height: '4px',
+              height: '8px',
               background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '2px',
+              borderRadius: '4px',
               overflow: 'hidden',
               position: 'relative'
-            }} />
+            }}>
+              <div
+                className="loading-bar-fill"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  height: '100%',
+                  width: `${processingProgress}%`,
+                  background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
+                  transition: 'width 0.3s ease-out',
+                }}
+              />
+            </div>
             <div style={{
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '0.9rem',
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontSize: '1.1rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '12px',
+              textAlign: 'center',
+              fontWeight: '500'
             }}>
               <span style={{ 
                 display: 'inline-block',
-                width: '6px',
-                height: '6px',
+                width: '8px',
+                height: '8px',
                 backgroundColor: '#5658f5',
                 borderRadius: '50%',
                 animation: 'pulse 1s infinite'
               }} />
-              Processing your lecture...
+              {processingStatus || 'Processing your lecture...'}
             </div>
           </div>
         )}
       </div>
 
       <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: isRecordingRef.current ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', 
+        display: 'grid',
+        gridTemplateColumns: (!isRecording && !isProcessing) ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr',
         gap: '30px',
         transition: 'all 0.3s ease'
       }}>
@@ -517,7 +538,7 @@ export function RecordingApp({}: RecordingAppProps) {
           </div>
         </div>
 
-        {!isRecordingRef.current && (
+        {(!isRecording && !isProcessing) && (
           <div style={{ 
             background: 'rgba(255, 255, 255, 0.03)',
             borderRadius: '16px',
@@ -551,7 +572,7 @@ export function RecordingApp({}: RecordingAppProps) {
               whiteSpace: 'pre-wrap',
               wordWrap: 'break-word'
             }}>
-              {summary || (isProcessing && !isRecordingRef.current ? '⏳ Generating summary...' : 'Your lecture summary will be generated after your recording...')}
+              Your lecture summary will be generated after your recording...
             </div>
           </div>
         )}
@@ -566,32 +587,36 @@ export function RecordingApp({}: RecordingAppProps) {
           70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(100, 108, 255, 0); }
           100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(100, 108, 255, 0); }
         }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
         @keyframes pulse {
           0% { opacity: 0.4; transform: scale(0.8); }
           50% { opacity: 1; transform: scale(1); }
           100% { opacity: 0.4; transform: scale(0.8); }
         }
-        .loading-bar::after {
+
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        /* Shimmer effect applied to the filled part of the bar */
+        .loading-bar-fill::after {
           content: '';
           position: absolute;
           top: 0;
           left: 0;
-          width: 100%;
+          width: 100%; /* 100% of .loading-bar-fill's width */
           height: 100%;
           background: linear-gradient(
             90deg,
             transparent,
-            #5658f5,
-            #8c8eff,
-            #5658f5,
+            rgba(255, 255, 255, 0.15),
+            rgba(255, 255, 255, 0.3),
+            rgba(255, 255, 255, 0.15),
             transparent
           );
           background-size: 200% 100%;
           animation: shimmer 2s infinite linear;
+          /* The border-radius will be clipped by the parent .loading-bar's overflow:hidden */
         }
       `}</style>
     </div>

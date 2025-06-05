@@ -211,17 +211,36 @@ async def websocket_transcribe(ws: WebSocket):
         
         print("Full Transcript for OpenAI: " + transcript)
 
-        summary = "Summary could not be generated for this session." # Default summary
+        summary = "Summary could not be generated for this session."
 
         try:
+            # Send processing status
+            await ws.send_text(json.dumps({
+                "processing_status": "Getting everything ready for analysis...",
+                "progress": 20
+            }))
+
             # Generate summary
-            summary = summarizer.summarize(transcript) # This can take time
+            await ws.send_text(json.dumps({
+                "processing_status": "Creating your AI-powered summary...",
+                "progress": 40
+            }))
+            summary = summarizer.summarize(transcript)
             print("\nChatGPT Full Summary: " + summary)
 
+            await ws.send_text(json.dumps({
+                "processing_status": "Pulling out the important insights...",
+                "progress": 60
+            }))
             structured_summary_data = summarizer.parse_structured_summary(summary)
             print("\nParsed Structured Summary Data:\n", structured_summary_data)
 
             # Store in DB
+            await ws.send_text(json.dumps({
+                "processing_status": "Saving your notes securely...",
+                "progress": 80
+            }))
+            
             # Define conditions for not storing, e.g., very short or error messages
             skippable_transcripts = [
                 "No speech detected in audio", 
@@ -229,8 +248,6 @@ async def websocket_transcribe(ws: WebSocket):
             ]
             # Also consider not storing if summary indicates an error.
             if transcript.strip() and transcript not in skippable_transcripts and "Error generating summary" not in summary:
-                # Extract a title from the first sentence or first N words
-                
                 lecture_data_to_insert = {
                     "user_id": user_id,
                     "transcript": transcript,
@@ -256,13 +273,20 @@ async def websocket_transcribe(ws: WebSocket):
                 print(f"Skipping DB insert for transcript: '{transcript}' or due to summary error.")
                 lecture_id = None
 
+            await ws.send_text(json.dumps({
+                "processing_status": "Putting on the final touches...",
+                "progress": 95
+            }))
+
             # Ensure summary and full transcript are sent if connection is still open
             if ws.client_state == WebSocketState.CONNECTED:
                 try:
                     await ws.send_text(json.dumps({
                         "summary": summary,
                         "transcript": transcript,
-                        "lecture_id": lecture_id
+                        "lecture_id": lecture_id,
+                        "processing_status": "All done! Your notes are ready.",
+                        "progress": 100
                     }))
                     print("Summary and final transcript sent successfully.")
                 except Exception as e:
@@ -276,7 +300,7 @@ async def websocket_transcribe(ws: WebSocket):
             if ws.client_state == WebSocketState.CONNECTED:
                 try:
                     await ws.send_text(json.dumps({
-                        "error": "Failed to generate summary or store data.",
+                        "error": "Oops! Something went wrong while saving or summarizing.",
                         "transcript": transcript # Send transcript even if summary fails
                     }))
                 except Exception as send_err:

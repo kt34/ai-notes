@@ -88,7 +88,7 @@ class STTClient:
                 punctuate=True, language="en-US",
                 encoding="linear16", channels=1, sample_rate=16000,
                 interim_results=True, 
-                utterance_end_ms="1000", vad_events=True,
+                utterance_end_ms="2000", vad_events=True,
                 smart_format=True,
                 # speech_final=True # Explicitly request speech_final events
             )
