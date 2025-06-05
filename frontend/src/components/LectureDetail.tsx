@@ -561,9 +561,11 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               />
             </div>
             <div style={{
-              maxHeight: isTranscriptExpanded ? '1000px' : '0',
+              height: isTranscriptExpanded ? 'auto' : '0',
+              opacity: isTranscriptExpanded ? 1 : 0,
+              visibility: isTranscriptExpanded ? 'visible' : 'hidden',
               overflow: 'hidden',
-              transition: 'all 0.3s ease',
+              transition: 'opacity 0.3s ease, visibility 0.3s ease',
               background: 'rgba(255, 255, 255, 0.02)'
             }}>
               <div style={{
@@ -572,7 +574,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                 fontSize: '1rem',
                 lineHeight: '1.6',
                 whiteSpace: 'pre-wrap',
-                wordWrap: 'break-word'
+                wordWrap: 'break-word',
+                maxHeight: isTranscriptExpanded ? 'none' : '0'
               }}>
                 {lecture.transcript}
               </div>
