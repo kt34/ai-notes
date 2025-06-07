@@ -19,10 +19,126 @@ interface Lecture {
   created_at: string;
 }
 
+// Icon Components for a cleaner look
+const PencilIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+    <path d="M3 6h18"></path>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
+// Confirmation Dialog Component
+function ConfirmationDialog({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void;
+  title: string;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.75)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'rgba(30, 30, 30, 0.95)',
+        borderRadius: '12px',
+        padding: '2rem',
+        maxWidth: '400px',
+        width: '90%',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+      }}>
+        <h3 style={{
+          color: '#fff',
+          marginTop: 0,
+          marginBottom: '1.5rem',
+          fontSize: '1.2rem',
+          textAlign: 'center'
+        }}>
+          {title}
+        </h3>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '1rem',
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#ef4444',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Lectures() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [lectureToDelete, setLectureToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -33,6 +149,7 @@ export function Lectures() {
           token
         });
         setLectures(data);
+        setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -42,6 +159,29 @@ export function Lectures() {
 
     fetchLectures();
   }, [token]);
+
+  const handleDelete = async (lectureId: string) => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const response = await apiRequest(`/lectures/${lectureId}`, {
+        method: 'DELETE',
+        token
+      });
+      
+      if (response.success) {
+        setLectures(lectures.filter(lecture => lecture.id !== lectureId));
+        setIsDeleteDialogOpen(false);
+        setLectureToDelete(null);
+      } else {
+        throw new Error('Failed to delete lecture');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete lecture');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const calculateReadingTime = (text: string) => {
     const wordsPerMinute = 200;
@@ -99,13 +239,69 @@ export function Lectures() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ 
-        fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-        color: '#fff',
+      {error && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          color: '#ef4444',
+          padding: '1rem',
+          borderRadius: '8px',
+          marginBottom: '1rem',
+          textAlign: 'center'
+        }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: '2rem'
       }}>
-        Your Lectures
-      </h1>
+        <h1 style={{ 
+          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+          color: '#fff',
+          margin: 0
+        }}>
+          Your Lectures
+        </h1>
+        <button
+          onClick={() => {
+            setIsEditMode(!isEditMode);
+            setError(null);
+          }}
+          style={{
+            background: isEditMode ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+            border: `1px solid ${isEditMode ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.15)'}`,
+            borderRadius: '8px',
+            padding: '0.5rem 1rem',
+            color: isEditMode ? '#fff' : 'rgba(255, 255, 255, 0.7)',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            transition: 'all 0.2s ease',
+            fontWeight: 500,
+          }}
+          onMouseEnter={(e) => {
+            if (!isEditMode) {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.color = '#fff';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isEditMode) {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+            }
+          }}
+        >
+          <PencilIcon />
+          {isEditMode ? 'Done' : 'Edit Lectures'}
+        </button>
+      </div>
       
       <div style={{ 
         display: 'grid',
@@ -115,34 +311,39 @@ export function Lectures() {
         {lectures.map((lecture) => (
           <div
             key={lecture.id}
-            onClick={() => navigate(`/lectures/${lecture.id}`)}
             style={{
               background: 'rgba(255, 255, 255, 0.03)',
               borderRadius: '16px',
               padding: '1.5rem',
-              cursor: 'pointer',
+              cursor: isEditMode ? 'default' : 'pointer',
               transition: 'all 0.3s ease',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(8px)',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden' 
             }}
+            onClick={() => !isEditMode && navigate(`/lectures/${lecture.id}`)}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-5px)';
-              e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
-              e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+              if (!isEditMode) {
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+                e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+              if (!isEditMode) {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+              }
             }}
           >
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
-              alignItems: 'flex-start',
-              marginBottom: '1rem'
+              alignItems: 'center',
+              marginBottom: '1rem',
+              minHeight: '34px'
             }}>
               <span style={{ 
                 color: 'rgba(255, 255, 255, 0.6)',
@@ -150,19 +351,54 @@ export function Lectures() {
               }}>
                 {formatDate(lecture.created_at)}
               </span>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'rgba(100, 108, 255, 0.1)',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '12px',
-                fontSize: '0.75rem',
-                color: '#646cff'
-              }}>
-                <span>✨</span>
-                {lecture.key_concepts.length} key concepts
-              </div>
+              {isEditMode ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLectureToDelete(lecture.id);
+                    setIsDeleteDialogOpen(true);
+                  }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    color: '#ef4444',
+                    borderRadius: '8px',
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                  }}
+                >
+                  <TrashIcon />
+                  <span>Delete</span>
+                </button>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: 'rgba(100, 108, 255, 0.1)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '12px',
+                  fontSize: '0.75rem',
+                  color: '#646cff'
+                }}>
+                  <span>✨</span>
+                  {lecture.key_concepts.length} key concepts
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
@@ -240,6 +476,21 @@ export function Lectures() {
           </div>
         ))}
       </div>
+
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setLectureToDelete(null);
+          setError(null);
+        }}
+        onConfirm={() => lectureToDelete && handleDelete(lectureToDelete)}
+        title={
+          isDeleting 
+            ? "Deleting lecture..."
+            : "Are you sure you want to permanently delete this lecture? This action cannot be undone."
+        }
+      />
     </div>
   );
 } 

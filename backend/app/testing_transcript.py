@@ -18,10 +18,10 @@ from app.db import supabase # Your initialized Supabase client
 
 # --- Configuration ---
 # !!! REPLACE WITH YOUR ACTUAL TEST USER ID FROM SUPABASE AUTH !!!
-TEST_USER_ID = "ff2e01ca-fca8-4f73-a288-405aa4879d42" 
+TEST_USER_ID = "66f5879e-5832-42d5-93d1-a5fa30b5984c" 
 TRANSCRIPT_FILE_PATH = "/Users/kevinton/Desktop/Projects/ai-notes/backend/app/transcript.txt" # In the same backend/app/ directory
 
-def create_mock_lecture(user_id: str, transcript_content: str):
+async def create_mock_lecture(user_id: str, transcript_content: str):
     if user_id == "YOUR_SUPABASE_USER_ID_HERE":
         print("ERROR: Please update TEST_USER_ID in the script with a valid Supabase User ID.")
         return
@@ -35,7 +35,7 @@ def create_mock_lecture(user_id: str, transcript_content: str):
 
     # 1. Summarize the transcript
     print("\nSummarizing transcript with OpenAI...")
-    full_summary_text = summarizer.summarize(transcript_content)
+    full_summary_text = await summarizer.summarize(transcript_content)
     if "Error generating summary" in full_summary_text or \
        "No transcript provided to summarize" in full_summary_text:
         print(f"Failed to generate summary: {full_summary_text}")
@@ -156,7 +156,7 @@ def create_mock_lecture(user_id: str, transcript_content: str):
         import traceback
         traceback.print_exc()
 
-def main():
+async def main():
     if not settings.OPENAI_API_KEY or not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
         print("Error: Missing one or more required environment variables (OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY).")
         return
@@ -173,8 +173,8 @@ def main():
         print(f"Error: The transcript file '{TRANSCRIPT_FILE_PATH}' is empty.")
         return
 
-    create_mock_lecture(TEST_USER_ID, sample_transcript)
+    await create_mock_lecture(TEST_USER_ID, sample_transcript)
 
 if __name__ == "__main__":
     from datetime import datetime # For fallback title
-    main()
+    asyncio.run(main())

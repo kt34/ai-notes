@@ -18,11 +18,11 @@ interface Lecture {
   references: string[];
   created_at: string;
   section_summaries: Array<{
-    timestamp_marker: string;
-    main_topics: string[];
-    key_points: string[];
-    examples: string[] | null;
-    summary: string;
+    section_title: string;
+    key_takeaways: string[];
+    new_vocabulary: string[];
+    study_questions: string[];
+    context_link: string;
   }>;
 }
 
@@ -201,14 +201,15 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            padding: 0
+            padding: 0,
+            fontSize: '1rem'
           }}
         >
           ← Back to Lectures
         </button>
       </div>
 
-      <div style={{ 
+      <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr',
         gap: '2rem'

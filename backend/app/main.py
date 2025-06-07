@@ -79,6 +79,30 @@ async def get_lecture(lecture_id: str, current_user: SupabaseUser = Depends(get_
             raise e
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/lectures/{lecture_id}")
+async def delete_lecture(lecture_id: str, current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    try:
+        # First, verify the lecture exists and belongs to the user
+        select_response = supabase.table("lectures").select("id").eq("id", lecture_id).eq("user_id", current_user.id).execute()
+        
+        if not select_response.data:
+            raise HTTPException(status_code=404, detail="Lecture not found or you do not have permission to delete it.")
+
+        # If verification passes, proceed with deletion
+        delete_response = supabase.table("lectures").delete().eq("id", lecture_id).eq("user_id", current_user.id).execute()
+
+        # The delete operation itself might not return data, so we check for errors if any
+        if hasattr(delete_response, 'error') and delete_response.error:
+            raise HTTPException(status_code=500, detail=f"Failed to delete lecture: {delete_response.error.message}")
+
+        # Return a success response
+        return {"success": True, "message": "Lecture deleted successfully"}
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
 @app.post("/auth/refresh")
 async def refresh_token(refresh_token: str):
     try:

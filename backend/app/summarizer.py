@@ -34,17 +34,16 @@ class Summarizer:
     async def _generate_section_summary(self, section: str, section_number: int, total_sections: int) -> dict:
         """Generate a summary for a single section of the transcript."""
         prompt = (
-            f"You are analyzing section {section_number} of {total_sections} from a lecture transcript.\n"
-            "Create a concise summary of this section that includes:\n"
-            "1. The main topics or concepts discussed\n"
-            "2. Any key points or arguments made\n"
-            "3. Notable examples or illustrations used\n\n"
-            "Format the response as a JSON object with these fields:\n"
-            "- timestamp_marker: A text marker indicating this is section {section_number} of {total_sections}\n"
-            "- main_topics: A list of 1-3 main topics covered in this section\n"
-            "- key_points: A list of the most important points made\n"
-            "- examples: Any specific examples mentioned (or null if none)\n"
-            "- summary: A 2-3 sentence summary of this section\n\n"
+            f"You are a student-focused AI assistant analyzing section {section_number} of {total_sections} of a lecture transcript. "
+            "Your goal is to create a concise, structured summary that helps a student digest this specific part of the lecture. "
+            "The summary should be distinct from a simple transcript reduction and focus on actionable learning points.\n\n"
+            "Format the response as a JSON object with the following fields and STRICT constraints:\n"
+            "- section_title: A very short, descriptive title for this section (e.g., 'Introduction to Photosynthesis'). MUST be a string.\n"
+            "- key_takeaways: A list of 2-3 of the most critical concepts or conclusions as STRINGS. Each string MUST be a complete sentence. If none, return an empty list.\n"
+            "- new_vocabulary: A list of 1-5 new important keywords or technical terms as STRINGS. If none, return an empty list.\n"
+            "- study_questions: A list of 1-2 pointed questions as STRINGS that a student should be able to answer after this section. This promotes active recall.\n"
+            "- context_link: A single sentence as a STRING explaining how this section connects to the previous one or what it sets up for the next section.\n\n"
+            "Respond ONLY with the JSON object. Do not include any other text or formatting.\n\n"
             "Here is the section text:\n\n"
             f"{section}"
         )
@@ -53,18 +52,18 @@ class Summarizer:
             response = await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
+                temperature=0.4, # Slightly increased for more creative questions/links
                 response_format={ "type": "json_object" }
             )
             return json.loads(response.choices[0].message.content)
         except Exception as e:
             print(f"Error generating section summary: {str(e)}")
             return {
-                "timestamp_marker": f"Section {section_number} of {total_sections}",
-                "main_topics": [],
-                "key_points": [],
-                "examples": None,
-                "summary": f"Error generating summary for section {section_number}: {str(e)}"
+                "section_title": f"Section {section_number}",
+                "key_takeaways": [],
+                "new_vocabulary": [],
+                "study_questions": [],
+                "context_link": f"Error generating summary for section {section_number}: {str(e)}"
             }
 
     async def summarize(self, transcript: str) -> str:
