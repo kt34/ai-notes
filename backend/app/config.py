@@ -6,6 +6,12 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str
     OPENAI_API_KEY: str
     FRONTEND_URL: str
+    STRIPE_PUBLISHABLE_KEY: str
+    STRIPE_SECRET_KEY: str
+    STRIPE_PRODUCT_ID: str
+    STRIPE_PRICE_MAX: str
+    STRIPE_PRICE_PRO: str
+    STRIPE_PRICE_STANDARD: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

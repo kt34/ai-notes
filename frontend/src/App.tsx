@@ -10,6 +10,7 @@ import { LandingPage } from './pages/LandingPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { PricingPage } from './pages/PricingPage';
 import { NavBar } from './components/NavBar';
 import { ScrollToTop } from './components/ScrollToTop';
 import './App.css';
@@ -76,6 +77,11 @@ function App() {
         <Route path="/profile" element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/pricing" element={
+          <ProtectedRoute>
+            <PricingPage />
           </ProtectedRoute>
         } />
       </Routes>

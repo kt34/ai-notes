@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
+import { config } from '../config';
 
 interface UserStats {
   total_lectures: number;
@@ -12,9 +13,13 @@ interface UserStats {
 export function ProfilePage() {
   const { user, logout, token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -33,6 +38,19 @@ export function ProfilePage() {
     fetchStats();
   }, [token]);
 
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const paymentStatus = queryParams.get('payment_status');
+
+    if (paymentStatus === 'success') {
+      setPaymentStatusMessage('🎉 Payment successful! Your subscription has been activated.');
+      navigate(location.pathname, { replace: true });
+    } else if (paymentStatus === 'cancelled') {
+      setPaymentStatusMessage('Payment cancelled. Your subscription was not activated. You can try again anytime from the pricing page.');
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
+
   const handleLogout = async () => {
     setIsLoading(true);
     try {
@@ -43,6 +61,11 @@ export function ProfilePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const currentSubscription = {
+    planName: 'Free Plan',
+    status: 'Active'
   };
 
   return (
@@ -77,7 +100,7 @@ export function ProfilePage() {
             fontWeight: 'bold',
             boxShadow: '0 4px 12px rgba(86, 88, 245, 0.3)'
           }}>
-            {user?.full_name ? user.full_name[0].toUpperCase() : user?.email[0].toUpperCase()}
+            {user?.full_name ? user.full_name[0].toUpperCase() : user?.email ? user.email[0].toUpperCase() : 'U'}
           </div>
           <div>
             <h1 style={{ 
@@ -243,6 +266,70 @@ export function ProfilePage() {
               </p>
             </div>
           </div>
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <h2 style={{ color: '#fff', fontSize: '1.4rem', marginBottom: '1rem' }}>
+            Manage Subscription
+          </h2>
+          
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            padding: '1rem 1.5rem',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <p style={{ color: 'rgba(255, 255, 255, 0.8)', margin: '0 0 0.25rem 0' }}>Current Plan: <strong>{currentSubscription.planName}</strong></p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>Status: {currentSubscription.status}</p>
+            </div>
+            <button
+              onClick={() => navigate('/pricing')}
+              style={{
+                padding: '0.6rem 1.2rem',
+                background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              View/Update Plans
+            </button>
+          </div>
+
+          {paymentStatusMessage && (
+            <div style={{
+              padding: '1rem',
+              marginBottom: '1rem',
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: paymentStatusMessage.includes('successful') ? 'rgba(74, 222, 128, 0.3)' : 'rgba(248, 113, 113, 0.3)',
+              background: paymentStatusMessage.includes('successful') ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)',
+              color: paymentStatusMessage.includes('successful') ? '#a7f3d0' : '#fecaca',
+            }}>
+              {paymentStatusMessage}
+            </div>
+          )}
+          {checkoutError && (
+            <div style={{
+              padding: '1rem',
+              marginBottom: '1rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#fca5a5',
+            }}>
+              Error: {checkoutError}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ from .summarizer import Summarizer
 from .db import supabase, get_user_lectures
 from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user, get_authenticated_user_from_header, SupabaseUser, VerifyEmailRequest, AuthResponse, ResendVerificationRequest, resend_verification_email
 import asyncio
+import stripe # Added for Stripe integration
+from pydantic import BaseModel # Added for request body model
 
 app = FastAPI()
 app.add_middleware(
@@ -18,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-stt_client = STTClient(settings.DEEPGRAM_API_KEY)
+# stt_client = STTClient(settings.DEEPGRAM_API_KEY) // Removed global instance
 summarizer = Summarizer(settings.OPENAI_API_KEY)
 
 # Auth endpoints
@@ -94,10 +96,60 @@ async def resend_verification_endpoint(data: ResendVerificationRequest):
     """Resend verification email."""
     return await resend_verification_email(data)
 
+# Stripe integration
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+class CreateCheckoutSessionRequest(BaseModel):
+    plan_type: str # e.g., "standard", "pro", "max"
+
+@app.post("/api/v1/stripe/create-checkout-session")
+async def create_checkout_session(
+    request_data: CreateCheckoutSessionRequest,
+    current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
+):
+    plan_type = request_data.plan_type
+    price_id = None
+
+    if plan_type == "standard":
+        price_id = settings.STRIPE_PRICE_STANDARD
+    elif plan_type == "pro":
+        price_id = settings.STRIPE_PRICE_PRO
+    elif plan_type == "max":
+        price_id = settings.STRIPE_PRICE_MAX
+    
+    if not price_id:
+        raise HTTPException(status_code=400, detail="Invalid plan type provided.")
+
+    success_url = f"{settings.FRONTEND_URL}/profile?payment_status=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{settings.FRONTEND_URL}/profile?payment_status=cancelled"
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[
+                {
+                    'price': price_id,
+                    'quantity': 1,
+                },
+            ],
+            mode='subscription', # Assuming these are subscription prices
+            success_url=success_url,
+            cancel_url=cancel_url,
+            # You can add customer_email: current_user.email if you want to prefill it
+            # and associate the Stripe customer with your Supabase user
+            # For more robust integration, consider creating/retrieving Stripe customer ID
+            # and passing it via the `customer` parameter.
+            # client_reference_id=current_user.id # Useful for webhook reconciliation
+        )
+        return {"sessionId": checkout_session.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
     
+    stt_client = STTClient(settings.DEEPGRAM_API_KEY) # Create new instance per connection
+
     try:
 
         token = ws.query_params.get("token")
