@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
-import { config } from '../config';
 
 interface UserStats {
   total_lectures: number;
@@ -18,7 +17,6 @@ export function ProfilePage() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -316,18 +314,6 @@ export function ProfilePage() {
               color: paymentStatusMessage.includes('successful') ? '#a7f3d0' : '#fecaca',
             }}>
               {paymentStatusMessage}
-            </div>
-          )}
-          {checkoutError && (
-            <div style={{
-              padding: '1rem',
-              marginBottom: '1rem',
-              borderRadius: '8px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              background: 'rgba(239, 68, 68, 0.1)',
-              color: '#fca5a5',
-            }}>
-              Error: {checkoutError}
             </div>
           )}
         </div>

@@ -11,7 +11,7 @@ const stripePromise = config.stripePublishableKey
   : null;
 
 export function PricingPage() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,7 +34,7 @@ export function PricingPage() {
     }
   }, [location, navigate]);
 
-  const handleCheckout = async (planType: string, planName: string) => {
+  const handleCheckout = async (planType: string) => {
     if (!stripePromise) {
       setCheckoutError("Stripe is not configured correctly. Please contact support.");
       return;
@@ -170,7 +170,7 @@ export function PricingPage() {
               </ul>
             </div>
             <button
-              onClick={() => handleCheckout(plan.id, plan.name)}
+              onClick={() => handleCheckout(plan.id)}
               disabled={!stripePromise || !!isCheckingOutPlan}
               style={{
                 padding: '1rem 1.5rem',
