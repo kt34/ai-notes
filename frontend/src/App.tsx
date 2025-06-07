@@ -11,6 +11,8 @@ import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { PricingPage } from './pages/PricingPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { NavBar } from './components/NavBar';
 import { ScrollToTop } from './components/ScrollToTop';
 import './App.css';
@@ -56,6 +58,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />

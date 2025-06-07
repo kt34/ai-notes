@@ -7,7 +7,12 @@ from .config import settings
 from .stt import STTClient
 from .summarizer import Summarizer
 from .db import supabase, get_user_lectures
-from .auth import UserCreate, UserLogin, register_user, login_user, logout_user, get_current_user, get_authenticated_user_from_header, SupabaseUser, VerifyEmailRequest, AuthResponse, ResendVerificationRequest, resend_verification_email
+from .auth import (
+    UserCreate, UserLogin, register_user, login_user, logout_user, 
+    get_current_user, get_authenticated_user_from_header, SupabaseUser, 
+    VerifyEmailRequest, AuthResponse, ResendVerificationRequest, 
+    resend_verification_email, forgot_password, ForgotPasswordRequest
+)
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
@@ -95,6 +100,11 @@ async def verify_email_endpoint(verify_data: VerifyEmailRequest):
 async def resend_verification_endpoint(data: ResendVerificationRequest):
     """Resend verification email."""
     return await resend_verification_email(data)
+
+@app.post("/auth/forgot-password")
+async def forgot_password_endpoint(request: ForgotPasswordRequest):
+    """Initiate password reset process."""
+    return await forgot_password(request)
 
 # Stripe integration
 stripe.api_key = settings.STRIPE_SECRET_KEY

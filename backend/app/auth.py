@@ -31,6 +31,9 @@ class VerifyEmailRequest(BaseModel):
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
 class SupabaseUser(BaseModel):
     id: str
     email: Optional[EmailStr] = None
@@ -186,3 +189,23 @@ async def resend_verification_email(data: ResendVerificationRequest):
             status_code=400,
             detail=str(e)
         )
+
+async def forgot_password(request: ForgotPasswordRequest):
+    """Initiates password reset for a user."""
+    try:
+        # Supabase handles sending the email with the reset link
+        # The link URL is configured in your Supabase project's email templates
+        supabase.auth.reset_password_for_email(
+            email=request.email,
+            options={
+                # This should point to your frontend page for updating the password
+                'redirect_to': f'{settings.FRONTEND_URL}/update-password'
+            }
+        )
+        return {"message": "Password reset email sent. Please check your inbox."}
+    except Exception as e:
+        # Avoid confirming if an email exists for security reasons
+        # Log the actual error for debugging
+        print(f"Forgot password error for {request.email}: {e}")
+        # Return a generic success message regardless of whether the email exists
+        return {"message": "If an account with this email exists, a password reset link has been sent."}

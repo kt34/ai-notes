@@ -45,12 +45,46 @@ export function LoginPage() {
             <p>Smart lecture notes powered by AI</p>
           </div>
           <LoginForm />
-          <button 
-            onClick={() => navigate('/register')}
-            className="toggle-auth-btn"
-          >
-            Need an account? Register
-          </button>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: '0.5rem',
+            marginTop: '1rem',
+            width: '100%'
+          }}>
+            <button 
+              onClick={() => navigate('/register')}
+              className="toggle-auth-btn"
+              style={{ width: '100%', textAlign: 'center' }}
+            >
+              Need an account? Register
+            </button>
+            <button 
+              onClick={() => navigate('/forgot-password')}
+              style={{ 
+                background: 'none',
+                border: 'none',
+                padding: '0.5rem 0',
+                color: 'rgba(255, 255, 255, 0.6)',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+                textAlign: 'left',
+                width: '100%'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)';
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              Forgot your password?
+            </button>
+          </div>
         </div>
       </div>
     </>

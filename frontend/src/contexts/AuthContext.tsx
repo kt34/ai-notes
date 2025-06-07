@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { apiRequest, TokenExpiredError } from '../utils/api';
+import { supabase } from '../utils/supabase'; // Import the shared client
 
 interface User {
   id: string;
@@ -17,6 +18,7 @@ interface AuthContextType {
   register: (email: string, password: string, full_name?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   clearError: () => void;
+  updatePassword: (accessToken: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -120,10 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userData) {
         setUser(userData);
       } else {
-        throw new Error('Failed to fetch user data');
+        throw new Error('Failed to fetch user data after login.');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+    } catch (err: any) {
+      // The apiRequest utility already extracts the message from the error response
+      const errorMessage = err.message || 'An unknown login error occurred.';
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -144,10 +148,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return {
         success: true,
-        message: data.message || 'Please check your email to verify your account before logging in.'
+        message: data.message || 'Please check your email to verify your account.'
       };
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+    } catch (err: any) {
+      // The apiRequest utility already extracts the message from the error response
+      const errorMessage = err.message || 'An unknown registration error occurred.';
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -176,6 +182,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = () => setError(null);
 
+  const updatePassword = async (accessToken: string, newPassword: string) => {
+    // accessToken is now implicitly handled by the Supabase client,
+    // but we can keep it as a parameter to ensure this function is only
+    // called when a token is present on the page.
+    try {
+      setError(null);
+      setIsLoading(true);
+
+      if (!supabase) {
+        throw new Error("Supabase client is not initialized. Check your environment variables.");
+      }
+
+      // The singleton supabase client has already processed the URL fragment
+      // and established a temporary session. We just need to call updateUser.
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'An unexpected error occurred.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -185,7 +221,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
-      clearError
+      clearError,
+      updatePassword
     }}>
       {children}
     </AuthContext.Provider>
