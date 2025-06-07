@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Failed to fetch user data after login.');
       }
     } catch (err: any) {
-      // The apiRequest utility already extracts the message from the error response
+      // The apiRequest utility throws an error with the 'detail' message.
       const errorMessage = err.message || 'An unknown login error occurred.';
       setError(errorMessage);
       throw err;
@@ -151,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message: data.message || 'Please check your email to verify your account.'
       };
     } catch (err: any) {
-      // The apiRequest utility already extracts the message from the error response
+      // The apiRequest utility throws an error with the 'detail' message.
       const errorMessage = err.message || 'An unknown registration error occurred.';
       setError(errorMessage);
       throw err;

@@ -30,6 +30,7 @@ export async function apiRequest(endpoint: string, options: ApiRequestOptions = 
   // Handle 401 Unauthorized errors
   if (response.status === 401) {
     const errorData = await response.json().catch(() => ({}));
+    console.log(errorData);
     const errorMessage = errorData.detail || 'Unauthorized';
     
     // Check if the error is due to token expiration
@@ -48,6 +49,8 @@ export async function apiRequest(endpoint: string, options: ApiRequestOptions = 
       
       throw new TokenExpiredError();
     }
+
+    throw new Error(errorMessage || 'Something went wrong, please try again');
   }
 
   // Handle other error responses
