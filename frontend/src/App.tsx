@@ -88,6 +88,8 @@ function App() {
             <PricingPage />
           </ProtectedRoute>
         } />
+        {/* Catch-all route for unmatched paths */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
