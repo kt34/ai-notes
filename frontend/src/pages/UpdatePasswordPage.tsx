@@ -49,7 +49,7 @@ export function UpdatePasswordPage() {
     try {
       // The access token from the URL is managed by the Supabase client.
       // We just need to provide the new password.
-      await updatePassword("dummy-token", password); // The token here is a placeholder
+      await updatePassword(password);
       setSuccess(true);
     } catch (err) {
       // The error is already set in the AuthContext, so we don't need to do anything here

@@ -18,7 +18,7 @@ interface AuthContextType {
   register: (email: string, password: string, full_name?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   clearError: () => void;
-  updatePassword: (accessToken: string, newPassword: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -182,10 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = () => setError(null);
 
-  const updatePassword = async (accessToken: string, newPassword: string) => {
-    // accessToken is now implicitly handled by the Supabase client,
-    // but we can keep it as a parameter to ensure this function is only
-    // called when a token is present on the page.
+  const updatePassword = async (newPassword: string) => {
     try {
       setError(null);
       setIsLoading(true);
