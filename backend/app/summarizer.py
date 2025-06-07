@@ -1,11 +1,12 @@
 import os
-from openai import OpenAI
+from openai import AsyncOpenAI
 import re
 import json
+import asyncio
 
 class Summarizer:
     def __init__(self, api_key: str):
-        self.client = OpenAI(api_key=api_key)
+        self.client = AsyncOpenAI(api_key=api_key)
 
     def _split_transcript_into_sections(self, transcript: str, max_words_per_section: int = 500) -> list[str]:
         """Split transcript into sections based purely on word count."""
@@ -30,7 +31,7 @@ class Summarizer:
             
         return sections
 
-    def _generate_section_summary(self, section: str, section_number: int, total_sections: int) -> dict:
+    async def _generate_section_summary(self, section: str, section_number: int, total_sections: int) -> dict:
         """Generate a summary for a single section of the transcript."""
         prompt = (
             f"You are analyzing section {section_number} of {total_sections} from a lecture transcript.\n"
@@ -49,7 +50,7 @@ class Summarizer:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
@@ -66,19 +67,19 @@ class Summarizer:
                 "summary": f"Error generating summary for section {section_number}: {str(e)}"
             }
 
-    def summarize(self, transcript: str) -> str:
+    async def summarize(self, transcript: str) -> str:
         if not transcript.strip():
             return "No transcript provided to summarize."
             
-        # Generate section summaries first
+        # Generate section summaries first, concurrently
         sections = self._split_transcript_into_sections(transcript)
-        section_summaries = []
         
-        print(f"\nGenerating summaries for {len(sections)} sections...")
+        print(f"\nGenerating summaries for {len(sections)} sections concurrently...")
+        tasks = []
         for i, section in enumerate(sections, 1):
-            print(f"Generating summary for section {i}/{len(sections)}...")
-            section_summary = self._generate_section_summary(section, i, len(sections))
-            section_summaries.append(section_summary)
+            tasks.append(self._generate_section_summary(section, i, len(sections)))
+        
+        section_summaries = await asyncio.gather(*tasks)
         print("All section summaries generated.")
 
         # Generate the main summary without section summaries in the prompt
@@ -127,7 +128,7 @@ class Summarizer:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": overall_prompt}],
                 temperature=0.3,

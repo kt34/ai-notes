@@ -277,7 +277,7 @@ async def websocket_transcribe(ws: WebSocket):
                 "processing_status": "Creating your AI-powered summary...",
                 "progress": 40
             }))
-            summary = summarizer.summarize(transcript)
+            summary = await summarizer.summarize(transcript)
             print("\nChatGPT Full Summary: " + summary)
 
             await ws.send_text(json.dumps({
