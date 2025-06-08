@@ -11,6 +11,7 @@ export function UploadComponent() {
   const [error, setError] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState('');
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -32,68 +33,75 @@ export function UploadComponent() {
 
     setIsProcessing(true);
     setError(null);
-    setProcessingStatus('Connecting to server...');
-    setProcessingProgress(0);
+    setProcessingStatus('Preparing your file...');
+    setProcessingProgress(5);
 
     const backendUrl = `${config.apiUrl.replace('http', 'ws')}/ws/process-upload`;
-    socketRef.current = new WebSocket(backendUrl);
+    
+    // Give a brief moment for the UI to update before connecting
+    setTimeout(() => {
+      setProcessingStatus('Connecting to server...');
+      setProcessingProgress(10);
+      socketRef.current = new WebSocket(backendUrl);
 
-    socketRef.current.onopen = () => {
-      setProcessingStatus('Authenticating...');
-      socketRef.current?.send(JSON.stringify({ token }));
-
-      setProcessingStatus('Uploading content...');
-      if (activeTab === 'text') {
-        socketRef.current?.send(JSON.stringify({ type: 'text', data: textContent }));
-      } else if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const file_data = (e.target?.result as string).split(',')[1];
-          socketRef.current?.send(JSON.stringify({
-            type: 'file',
-            filename: file.name,
-            data: file_data,
-          }));
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-
-    socketRef.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-
-      if (message.error) {
-        setError(message.error);
+      socketRef.current.onopen = () => {
+        setProcessingStatus('Uploading content...');
+        setProcessingProgress(15);
+        socketRef.current?.send(JSON.stringify({ token }));
+  
+        if (activeTab === 'text') {
+          socketRef.current?.send(JSON.stringify({ type: 'text', data: textContent }));
+        } else if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const file_data = (e.target?.result as string).split(',')[1];
+            socketRef.current?.send(JSON.stringify({
+              type: 'file',
+              filename: file.name,
+              data: file_data,
+            }));
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+  
+      socketRef.current.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+  
+        if (message.error) {
+          setError(message.error);
+          setIsProcessing(false);
+          socketRef.current?.close();
+          return;
+        }
+  
+        if (message.processing_status) {
+          setProcessingStatus(message.processing_status);
+        }
+        if (message.progress) {
+          // Ensure progress doesn't go backwards from the initial client-side steps
+          setProcessingProgress(prev => Math.max(prev, message.progress));
+        }
+  
+        if (message.success && message.lecture_id) {
+          setProcessingStatus('All done! Redirecting...');
+          setProcessingProgress(100);
+          navigate(`/lectures/${message.lecture_id}`);
+        }
+      };
+  
+      socketRef.current.onerror = (err) => {
+        console.error('WebSocket Error:', err);
+        setError('Connection failed. Please try again.');
         setIsProcessing(false);
-        socketRef.current?.close();
-        return;
-      }
-
-      if (message.processing_status) {
-        setProcessingStatus(message.processing_status);
-      }
-      if (message.progress) {
-        setProcessingProgress(message.progress);
-      }
-
-      if (message.success && message.lecture_id) {
-        setProcessingStatus('All done! Redirecting...');
-        setProcessingProgress(100);
-        navigate(`/lectures/${message.lecture_id}`);
-      }
-    };
-
-    socketRef.current.onerror = (err) => {
-      console.error('WebSocket Error:', err);
-      setError('Connection failed. Please try again.');
-      setIsProcessing(false);
-    };
-
-    socketRef.current.onclose = () => {
-      if (!processingStatus.startsWith('All done!')) {
-        setIsProcessing(false);
-      }
-    };
+      };
+  
+      socketRef.current.onclose = () => {
+        if (!processingStatus.startsWith('All done!')) {
+          setIsProcessing(false);
+        }
+      };
+    }, 500); // 500ms delay to make the first step visible
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +109,41 @@ export function UploadComponent() {
     if (files && files.length > 0) {
       setFile(files[0]);
       setError(null);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation(); // Necessary to allow drop
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Check file type
+      const acceptedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+      if (acceptedTypes.includes(files[0].type)) {
+        setFile(files[0]);
+        setError(null);
+      } else {
+        setError('Unsupported file type. Please upload a DOC, DOCX, PDF, or TXT file.');
+      }
     }
   };
 
@@ -179,14 +222,20 @@ export function UploadComponent() {
 
         {activeTab === 'file' && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{
-              border: '2px dashed rgba(255, 255, 255, 0.2)',
-              borderRadius: '8px',
-              padding: '3rem',
-              marginBottom: '1rem',
-              background: file ? 'rgba(86, 88, 245, 0.1)' : 'transparent',
-              borderColor: file ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.2)',
-            }}>
+            <div 
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              style={{
+                border: `2px dashed ${isDragging ? '#8c8eff' : file ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.2)'}`,
+                borderRadius: '8px',
+                padding: '3rem',
+                marginBottom: '1rem',
+                background: isDragging ? 'rgba(86, 88, 245, 0.2)' : file ? 'rgba(86, 88, 245, 0.1)' : 'transparent',
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
               <input
                 type="file"
                 id="file-upload"
