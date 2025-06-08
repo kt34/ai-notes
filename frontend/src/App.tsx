@@ -16,6 +16,7 @@ import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { NavBar } from './components/NavBar';
 import { ScrollToTop } from './components/ScrollToTop';
 import './App.css';
+import { UploadPage } from './pages/UploadPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -66,6 +67,11 @@ function App() {
         <Route path="/record" element={
           <ProtectedRoute>
             <RecordPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/upload" element={
+          <ProtectedRoute>
+            <UploadPage />
           </ProtectedRoute>
         } />
         <Route path="/lectures" element={

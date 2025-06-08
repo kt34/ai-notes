@@ -3,6 +3,7 @@ import { config } from '../config';
 interface ApiRequestOptions extends RequestInit {
   token?: string | null;
   skipAuthRedirect?: boolean;
+  isFormData?: boolean;
 }
 
 export class TokenExpiredError extends Error {
@@ -13,18 +14,29 @@ export class TokenExpiredError extends Error {
 }
 
 export async function apiRequest(endpoint: string, options: ApiRequestOptions = {}) {
-  const { token, skipAuthRedirect = false, ...fetchOptions } = options;
+  const { token, skipAuthRedirect = false, isFormData = false, ...fetchOptions } = options;
   
   // Prepare headers
   const headers = new Headers(fetchOptions.headers);
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+  
+  if (!isFormData) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  // Convert body to JSON string if it's not FormData
+  let body = fetchOptions.body;
+  if (body && typeof body === 'object' && !isFormData) {
+    body = JSON.stringify(body);
+  }
 
   // Make the request
   const response = await fetch(`${config.apiUrl}${endpoint}`, {
     ...fetchOptions,
-    headers
+    headers,
+    body
   });
 
   // Handle 401 Unauthorized errors
@@ -53,12 +65,21 @@ export async function apiRequest(endpoint: string, options: ApiRequestOptions = 
     throw new Error(errorMessage || 'Something went wrong, please try again');
   }
 
+  if (response.status === 204) { // Handle no content response
+    return { success: true };
+  }
+
   // Handle other error responses
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Request failed');
   }
-
+  
   // Return successful response
-  return response.json();
+  try {
+    return await response.json();
+  } catch (e) {
+    // Handle cases where response is OK but body is empty
+    return { success: true };
+  }
 } 

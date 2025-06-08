@@ -65,6 +65,12 @@ export function NavBar() {
             Record
           </button>
           <button 
+            onClick={() => navigate('/upload')}
+            className={`nav-link ${location.pathname === '/upload' ? 'active' : ''}`}
+          >
+            Upload
+          </button>
+          <button 
             onClick={() => navigate('/lectures')}
             className={`nav-link ${location.pathname.startsWith('/lectures') ? 'active' : ''}`}
           >

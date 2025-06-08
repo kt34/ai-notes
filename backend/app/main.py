@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, WebSocket, HTTPException, Depends
+from fastapi import FastAPI, WebSocket, HTTPException, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from starlette.websockets import WebSocketDisconnect
@@ -16,6 +16,9 @@ from .auth import (
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
+import docx
+import pypdf
+from typing import Optional
 
 app = FastAPI()
 app.add_middleware(
@@ -177,6 +180,72 @@ async def create_checkout_session(
         return {"sessionId": checkout_session.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/upload/process")
+async def process_upload(
+    text_content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
+):
+    transcript = ""
+    if file:
+        if file.filename.endswith(".pdf"):
+            reader = pypdf.PdfReader(file.file)
+            for page in reader.pages:
+                transcript += page.extract_text() or ""
+        elif file.filename.endswith(".docx"):
+            doc = docx.Document(file.file)
+            for para in doc.paragraphs:
+                transcript += para.text + "\n"
+        elif file.filename.endswith(".txt"):
+            transcript = (await file.read()).decode("utf-8")
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type.")
+    elif text_content:
+        transcript = text_content
+    else:
+        raise HTTPException(status_code=400, detail="No content provided. Please provide either text or a file.")
+
+    if not transcript.strip():
+        raise HTTPException(status_code=400, detail="The provided content is empty.")
+
+    try:
+        # Generate summary and structured data using the existing summarizer
+        summary = await summarizer.summarize(transcript)
+        structured_summary_data = summarizer.parse_structured_summary(summary)
+
+        # Store in DB
+        lecture_data_to_insert = {
+            "user_id": current_user.id,
+            "transcript": transcript,
+            "summary": summary,
+            "lecture_title": structured_summary_data.get("lecture_title", "Uploaded Content"),
+            "topic_summary_sentence": structured_summary_data.get("topic_summary_sentence"),
+            "key_concepts": structured_summary_data.get("key_concepts"),
+            "main_points_covered": structured_summary_data.get("main_points_covered"),
+            "examples_mentioned": structured_summary_data.get("examples_mentioned"),
+            "important_quotes": structured_summary_data.get("important_quotes"),
+            "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
+            "references": structured_summary_data.get("references"),
+            "section_summaries": structured_summary_data.get("section_summaries", [])
+        }
+
+        db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
+        
+        if not db_response.data:
+             raise HTTPException(status_code=500, detail="Failed to save the generated notes.")
+
+        lecture_id = db_response.data[0]['id']
+
+        return {
+            "success": True, 
+            "message": "Notes generated successfully.",
+            "lecture_id": lecture_id
+        }
+
+    except Exception as e:
+        print(f"Error processing uploaded content: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred during processing: {str(e)}")
 
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):
