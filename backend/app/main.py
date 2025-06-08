@@ -21,6 +21,7 @@ import pypdf
 from typing import Optional
 import base64
 import io
+import pptx
 
 app = FastAPI()
 app.add_middleware(
@@ -229,6 +230,12 @@ async def websocket_process_upload(ws: WebSocket):
                 doc = docx.Document(file_like_object)
                 for para in doc.paragraphs:
                     transcript += para.text + "\n"
+            elif filename.endswith(".pptx"):
+                prs = pptx.Presentation(file_like_object)
+                for slide in prs.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, "text"):
+                            transcript += shape.text + "\n"
             elif filename.endswith(".txt"):
                 transcript = file_like_object.read().decode("utf-8")
             else:

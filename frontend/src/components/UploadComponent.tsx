@@ -16,6 +16,7 @@ export function UploadComponent() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const socketRef = React.useRef<WebSocket | null>(null);
+  const dragCounter = React.useRef(0);
 
   // Cleanup WebSocket on component unmount
   useEffect(() => {
@@ -115,13 +116,19 @@ export function UploadComponent() {
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
+    dragCounter.current++;
+    if (dragCounter.current === 1) {
+      setIsDragging(true);
+    }
   };
   
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(false);
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
   };
   
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -133,16 +140,23 @@ export function UploadComponent() {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+    dragCounter.current = 0; // Reset counter on drop
   
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       // Check file type
-      const acceptedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+      const acceptedTypes = [
+        'application/pdf', 
+        'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ];
       if (acceptedTypes.includes(files[0].type)) {
         setFile(files[0]);
         setError(null);
       } else {
-        setError('Unsupported file type. Please upload a DOC, DOCX, PDF, or TXT file.');
+        setError('Unsupported file type. Please upload a DOC, DOCX, PDF, PPTX, or TXT file.');
       }
     }
   };
@@ -152,8 +166,14 @@ export function UploadComponent() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '2rem', color: '#fff' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>Generate Notes</h1>
+    <div style={{ maxWidth: '800px', margin: '0 auto 1.5rem', padding: '0rem 1.5rem 1.5rem 1.5rem', color: '#fff' }}>
+      <h1 style={{ 
+        textAlign: 'center', 
+        marginBottom: '1rem',
+        fontSize: '2.5rem',
+        fontWeight: '700',
+        color: '#fff'
+      }}>Generate Notes</h1>
       <p style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '2rem' }}>
         Upload a document or paste text to automatically generate structured notes and summaries.
       </p>
@@ -210,7 +230,16 @@ export function UploadComponent() {
                 padding: '1rem',
                 color: '#fff',
                 fontSize: '1rem',
-                resize: 'vertical'
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'border-color 0.2s ease'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#5658f5';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
               }}
               disabled={isProcessing}
             />
@@ -229,18 +258,23 @@ export function UploadComponent() {
               onDrop={handleDrop}
               style={{
                 border: `2px dashed ${isDragging ? '#8c8eff' : file ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.2)'}`,
-                borderRadius: '8px',
-                padding: '3rem',
+                borderRadius: '12px',
+                padding: '4rem',
                 marginBottom: '1rem',
                 background: isDragging ? 'rgba(86, 88, 245, 0.2)' : file ? 'rgba(86, 88, 245, 0.1)' : 'transparent',
                 transition: 'all 0.2s ease-in-out',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '300px'
               }}
             >
               <input
                 type="file"
                 id="file-upload"
                 onChange={handleFileChange}
-                accept=".doc, .docx, .pdf, .txt"
+                accept=".doc, .docx, .pdf, .txt, .pptx"
                 style={{ display: 'none' }}
                 disabled={isProcessing}
               />
@@ -248,7 +282,7 @@ export function UploadComponent() {
                 {file ? `Selected: ${file.name}` : 'Choose a file or drag it here'}
               </label>
               <p style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '1rem' }}>
-                Supported formats: DOC, DOCX, PDF, TXT
+                Supported formats: DOC, DOCX, PDF, PPTX, TXT
               </p>
             </div>
             <button type="submit" style={getSubmitButtonStyle(isProcessing)} disabled={isProcessing || !file}>
