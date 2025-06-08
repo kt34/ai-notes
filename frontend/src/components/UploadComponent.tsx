@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
 
 export function UploadComponent() {
-  const [activeTab, setActiveTab] = useState('text'); // 'text' or 'file'
+  const [activeTab, setActiveTab] = useState('file'); // Changed default to 'file'
   const [textContent, setTextContent] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -187,16 +187,16 @@ export function UploadComponent() {
         padding: '0.3rem'
       }}>
         <button 
-          onClick={() => { setActiveTab('text'); setError(null); setFile(null); }}
-          style={getTabButtonStyle(activeTab === 'text')}
-        >
-          Paste Text
-        </button>
-        <button 
           onClick={() => { setActiveTab('file'); setError(null); setTextContent(''); }}
           style={getTabButtonStyle(activeTab === 'file')}
         >
           Upload File
+        </button>
+        <button 
+          onClick={() => { setActiveTab('text'); setError(null); setFile(null); }}
+          style={getTabButtonStyle(activeTab === 'text')}
+        >
+          Paste Text
         </button>
       </div>
 

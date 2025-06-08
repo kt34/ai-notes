@@ -357,25 +357,30 @@ export function RecordingApp({}: RecordingAppProps) {
       maxWidth: '1200px',
       margin: '0 auto',
       width: '100%',
-      height: '100%'
+      height: '100%',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      paddingBottom: '20px'
     }}>
       <div style={{
         textAlign: 'center',
-        marginBottom: '30px'
+        marginBottom: '25px',
+        padding: '0rem 1.5rem'
       }}>
         <h1 style={{ 
-          fontSize: 'clamp(2rem, 5vw, 2.8rem)', 
+          fontSize: 'clamp(2rem, 4vw, 2.5rem)',
           color: '#fff',
           marginBottom: '10px', 
-          fontWeight: 'bold'
-        }}>notez.ai</h1>
+          fontWeight: '700'
+        }}>Record Live</h1>
         <p style={{ 
-          fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', 
+          fontSize: 'clamp(1rem, 1.5vw, 1.1rem)', 
           color: 'rgba(255, 255, 255, 0.6)', 
           maxWidth: '600px', 
-          margin: '0 auto 20px' 
+          margin: '0 auto'
         }}>
-          Smart lecture notes powered by AI
+          Record your lecture and let AI transform it into structured notes
         </p>
       </div>
 
@@ -471,17 +476,18 @@ export function RecordingApp({}: RecordingAppProps) {
       <div style={{ 
         display: 'grid',
         gridTemplateColumns: (!isRecording && !isProcessing) ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr',
-        gap: '30px',
-        transition: 'all 0.3s ease'
+        gap: '20px',
+        flex: 1
       }}>
         <div style={{ 
           background: 'rgba(255, 255, 255, 0.03)',
           borderRadius: '16px',
-          padding: '25px',
+          padding: '20px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(8px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          minHeight: '300px',
+          height: 'calc(100vh - 300px)',
+          maxHeight: '400px',
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -512,16 +518,14 @@ export function RecordingApp({}: RecordingAppProps) {
               flex: 1,
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: '10px',
-              padding: '20px',
-              fontSize: '1rem',
+              padding: 'clamp(15px, 2vh, 20px)',
+              fontSize: 'clamp(0.9rem, 1.2vw, 1rem)',
               lineHeight: '1.6',
               color: 'rgba(255, 255, 255, 0.8)',
               overflowY: 'auto',
               whiteSpace: 'pre-wrap',
               wordWrap: 'break-word',
               scrollBehavior: 'smooth',
-              maxHeight: 'calc(100vh - 300px)',
-              minHeight: '300px',
               width: '100%'
             }}
           >
@@ -533,11 +537,12 @@ export function RecordingApp({}: RecordingAppProps) {
           <div style={{ 
             background: 'rgba(255, 255, 255, 0.03)',
             borderRadius: '16px',
-            padding: '25px',
+            padding: '20px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
             backdropFilter: 'blur(8px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
-            minHeight: '300px',
+            height: 'calc(100vh - 300px)',
+            maxHeight: '400px',
             display: 'flex',
             flexDirection: 'column'
           }}>
