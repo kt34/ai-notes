@@ -345,7 +345,7 @@ async def websocket_transcribe(ws: WebSocket):
                     "examples_mentioned": structured_summary_data.get("examples_mentioned"),
                     "important_quotes": structured_summary_data.get("important_quotes"),
                     "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
-                    "references": structured_summary_data.get("references"),
+                    "references": structured_summary_data.get("references", []),
                     "section_summaries": structured_summary_data.get("section_summaries", [])
                 }
 
