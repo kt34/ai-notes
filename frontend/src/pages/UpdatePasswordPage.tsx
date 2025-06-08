@@ -9,6 +9,7 @@ export function UpdatePasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { updatePassword, isLoading, error, clearError } = useAuth();
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   // The access_token is extracted from the URL fragment by the Supabase client automatically
   // when the page loads. We just need to check for its presence to enable the form.
@@ -30,29 +31,29 @@ export function UpdatePasswordPage() {
     
     // Clear any previous errors when the component mounts
     clearError();
+    setValidationError(null);
   }, [searchParams, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    setValidationError(null);
 
     if (password !== confirmPassword) {
-      // Set a local error for this specific page action
-      alert('Passwords do not match');
+      setValidationError('Passwords do not match');
       return;
     }
     if (password.length < 6) {
-      alert('Password must be at least 6 characters long.');
+      setValidationError('Password must be at least 6 characters long');
       return;
     }
 
     try {
-      // The access token from the URL is managed by the Supabase client.
-      // We just need to provide the new password.
       await updatePassword(password);
       setSuccess(true);
     } catch (err) {
-      // The error is already set in the AuthContext, so we don't need to do anything here
+      // Error is now set in the AuthContext, so we just need to catch the
+      // re-thrown error to prevent an unhandled promise rejection.
       console.error('Update password error:', err);
     }
   };
@@ -133,8 +134,12 @@ export function UpdatePasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} className="auth-form">
               <h2>Reset Password</h2>
-              {error && <div className="error-message">{error}</div>}
-              {!hasToken && !error && (
+              {(error || validationError) && (
+                <div className="error-message">
+                  {validationError || error}
+                </div>
+              )}
+              {!hasToken && !error && !validationError && (
                 <div className="error-message">
                   Invalid or missing password reset token. Please request a new link.
                 </div>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { apiRequest, TokenExpiredError } from '../utils/api';
 import { supabase } from '../utils/supabase'; // Import the shared client
@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   const updatePassword = async (newPassword: string) => {
     try {
@@ -198,6 +198,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
+        // The error from Supabase for using the same password has a 422 status code.
+        // We check for this and create a more user-friendly error message.
+        if ('status' in error && error.status === 422) {
+          throw new Error('New password must be different from the old one.');
+        }
         throw error;
       }
     } catch (err: any) {
