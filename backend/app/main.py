@@ -19,6 +19,8 @@ from pydantic import BaseModel # Added for request body model
 import docx
 import pypdf
 from typing import Optional
+import base64
+import io
 
 app = FastAPI()
 app.add_middleware(
@@ -181,42 +183,82 @@ async def create_checkout_session(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/upload/process")
-async def process_upload(
-    text_content: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
-    current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
-):
-    transcript = ""
-    if file:
-        if file.filename.endswith(".pdf"):
-            reader = pypdf.PdfReader(file.file)
-            for page in reader.pages:
-                transcript += page.extract_text() or ""
-        elif file.filename.endswith(".docx"):
-            doc = docx.Document(file.file)
-            for para in doc.paragraphs:
-                transcript += para.text + "\n"
-        elif file.filename.endswith(".txt"):
-            transcript = (await file.read()).decode("utf-8")
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported file type.")
-    elif text_content:
-        transcript = text_content
-    else:
-        raise HTTPException(status_code=400, detail="No content provided. Please provide either text or a file.")
-
-    if not transcript.strip():
-        raise HTTPException(status_code=400, detail="The provided content is empty.")
+@app.websocket("/ws/process-upload")
+async def websocket_process_upload(ws: WebSocket):
+    await ws.accept()
 
     try:
-        # Generate summary and structured data using the existing summarizer
+        # 1. Authenticate user from token sent by client
+        auth_message = await ws.receive_json()
+        token = auth_message.get("token")
+        if not token:
+            await ws.close(code=4001, reason="Missing authentication token")
+            return
+        
+        user_response = supabase.auth.get_user(token)
+        if not user_response or not user_response.user:
+            await ws.close(code=4001, reason="Invalid authentication token")
+            return
+        
+        user_id = user_response.user.id
+        print(f"User {user_id} connected for upload processing.")
+
+        # 2. Receive content (text or file) from the client
+        content_message = await ws.receive_json()
+        content_type = content_message.get("type")
+        
+        transcript = ""
+        if content_type == "text":
+            transcript = content_message.get("data", "")
+        elif content_type == "file":
+            filename = content_message.get("filename", "")
+            file_bytes_str = content_message.get("data", "")
+            file_bytes = base64.b64decode(file_bytes_str)
+            file_like_object = io.BytesIO(file_bytes)
+
+            await ws.send_text(json.dumps({
+                "processing_status": "Extracting text from your file...",
+                "progress": 10
+            }))
+            
+            if filename.endswith(".pdf"):
+                reader = pypdf.PdfReader(file_like_object)
+                for page in reader.pages:
+                    transcript += page.extract_text() or ""
+            elif filename.endswith(".docx"):
+                doc = docx.Document(file_like_object)
+                for para in doc.paragraphs:
+                    transcript += para.text + "\n"
+            elif filename.endswith(".txt"):
+                transcript = file_like_object.read().decode("utf-8")
+            else:
+                raise ValueError("Unsupported file type.")
+        else:
+            raise ValueError("Invalid content type specified.")
+
+        if not transcript.strip():
+            raise ValueError("The provided content is empty.")
+
+        # 3. Process the content and send progress updates
+        await ws.send_text(json.dumps({
+            "processing_status": "Creating your AI-powered summary...",
+            "progress": 40
+        }))
         summary = await summarizer.summarize(transcript)
+
+        await ws.send_text(json.dumps({
+            "processing_status": "Pulling out the important insights...",
+            "progress": 60
+        }))
         structured_summary_data = summarizer.parse_structured_summary(summary)
 
-        # Store in DB
+        await ws.send_text(json.dumps({
+            "processing_status": "Saving your notes securely...",
+            "progress": 80
+        }))
+        
         lecture_data_to_insert = {
-            "user_id": current_user.id,
+            "user_id": user_id,
             "transcript": transcript,
             "summary": summary,
             "lecture_title": structured_summary_data.get("lecture_title", "Uploaded Content"),
@@ -233,19 +275,26 @@ async def process_upload(
         db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
         
         if not db_response.data:
-             raise HTTPException(status_code=500, detail="Failed to save the generated notes.")
+            raise Exception("Failed to save the generated notes.")
 
         lecture_id = db_response.data[0]['id']
 
-        return {
-            "success": True, 
-            "message": "Notes generated successfully.",
+        await ws.send_text(json.dumps({
+            "processing_status": "All done! Your notes are ready.",
+            "progress": 100,
+            "success": True,
             "lecture_id": lecture_id
-        }
+        }))
 
     except Exception as e:
-        print(f"Error processing uploaded content: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"An error occurred during processing: {str(e)}")
+        print(f"Error in websocket_process_upload: {str(e)}")
+        error_message = str(e)
+        if ws.client_state == WebSocketState.CONNECTED:
+            await ws.send_text(json.dumps({"error": f"An error occurred: {error_message}"}))
+    finally:
+        if ws.client_state != WebSocketState.DISCONNECTED:
+            await ws.close()
+        print("Upload processing WebSocket closed.")
 
 @app.websocket("/ws/transcribe")
 async def websocket_transcribe(ws: WebSocket):

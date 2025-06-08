@@ -1,51 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { apiRequest } from '../utils/api';
+import { config } from '../config';
 
 export function UploadComponent() {
   const [activeTab, setActiveTab] = useState('text'); // 'text' or 'file'
   const [textContent, setTextContent] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [processingProgress, setProcessingProgress] = useState(0);
+
   const { token } = useAuth();
   const navigate = useNavigate();
+  const socketRef = React.useRef<WebSocket | null>(null);
+
+  // Cleanup WebSocket on component unmount
+  useEffect(() => {
+    return () => {
+      socketRef.current?.close();
+    };
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    const formData = new FormData();
-    if (activeTab === 'text' && textContent) {
-      formData.append('text_content', textContent);
-    } else if (activeTab === 'file' && file) {
-      formData.append('file', file);
-    } else {
+    if ((activeTab === 'text' && !textContent) || (activeTab === 'file' && !file)) {
       setError('Please provide content to process.');
-      setIsLoading(false);
       return;
     }
 
-    try {
-      const response = await apiRequest('/upload/process', {
-        method: 'POST',
-        token,
-        body: formData,
-        isFormData: true
-      });
-      
-      if (response.success && response.lecture_id) {
-        navigate(`/lectures/${response.lecture_id}`);
-      } else {
-        throw new Error(response.message || 'Failed to process content.');
+    setIsProcessing(true);
+    setError(null);
+    setProcessingStatus('Connecting to server...');
+    setProcessingProgress(0);
+
+    const backendUrl = `${config.apiUrl.replace('http', 'ws')}/ws/process-upload`;
+    socketRef.current = new WebSocket(backendUrl);
+
+    socketRef.current.onopen = () => {
+      setProcessingStatus('Authenticating...');
+      socketRef.current?.send(JSON.stringify({ token }));
+
+      setProcessingStatus('Uploading content...');
+      if (activeTab === 'text') {
+        socketRef.current?.send(JSON.stringify({ type: 'text', data: textContent }));
+      } else if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const file_data = (e.target?.result as string).split(',')[1];
+          socketRef.current?.send(JSON.stringify({
+            type: 'file',
+            filename: file.name,
+            data: file_data,
+          }));
+        };
+        reader.readAsDataURL(file);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    socketRef.current.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.error) {
+        setError(message.error);
+        setIsProcessing(false);
+        socketRef.current?.close();
+        return;
+      }
+
+      if (message.processing_status) {
+        setProcessingStatus(message.processing_status);
+      }
+      if (message.progress) {
+        setProcessingProgress(message.progress);
+      }
+
+      if (message.success && message.lecture_id) {
+        setProcessingStatus('All done! Redirecting...');
+        setProcessingProgress(100);
+        navigate(`/lectures/${message.lecture_id}`);
+      }
+    };
+
+    socketRef.current.onerror = (err) => {
+      console.error('WebSocket Error:', err);
+      setError('Connection failed. Please try again.');
+      setIsProcessing(false);
+    };
+
+    socketRef.current.onclose = () => {
+      if (!processingStatus.startsWith('All done!')) {
+        setIsProcessing(false);
+      }
+    };
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,6 +103,10 @@ export function UploadComponent() {
       setError(null);
     }
   };
+
+  if (isProcessing) {
+    return <ProcessingView status={processingStatus} progress={processingProgress} />;
+  }
 
   return (
     <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '2rem', color: '#fff' }}>
@@ -117,10 +169,10 @@ export function UploadComponent() {
                 fontSize: '1rem',
                 resize: 'vertical'
               }}
-              disabled={isLoading}
+              disabled={isProcessing}
             />
-            <button type="submit" style={getSubmitButtonStyle(isLoading)} disabled={isLoading}>
-              {isLoading ? 'Generating...' : 'Generate from Text'}
+            <button type="submit" style={getSubmitButtonStyle(isProcessing)} disabled={isProcessing || !textContent}>
+              {isProcessing ? 'Processing...' : 'Generate from Text'}
             </button>
           </div>
         )}
@@ -141,17 +193,17 @@ export function UploadComponent() {
                 onChange={handleFileChange}
                 accept=".doc, .docx, .pdf, .txt"
                 style={{ display: 'none' }}
-                disabled={isLoading}
+                disabled={isProcessing}
               />
-              <label htmlFor="file-upload" style={getUploadLabelStyle(isLoading)}>
+              <label htmlFor="file-upload" style={getUploadLabelStyle(isProcessing)}>
                 {file ? `Selected: ${file.name}` : 'Choose a file or drag it here'}
               </label>
               <p style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '1rem' }}>
                 Supported formats: DOC, DOCX, PDF, TXT
               </p>
             </div>
-            <button type="submit" style={getSubmitButtonStyle(isLoading)} disabled={isLoading || !file}>
-              {isLoading ? 'Generating...' : 'Generate from File'}
+            <button type="submit" style={getSubmitButtonStyle(isProcessing)} disabled={isProcessing || !file}>
+              {isProcessing ? 'Processing...' : 'Generate from File'}
             </button>
           </div>
         )}
@@ -159,6 +211,37 @@ export function UploadComponent() {
     </div>
   );
 }
+
+const ProcessingView = ({ status, progress }: { status: string; progress: number }) => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '60vh',
+    color: '#fff'
+  }}>
+    <div style={{ width: '80%', maxWidth: '600px', textAlign: 'center' }}>
+      <h2 style={{ marginBottom: '1.5rem', fontWeight: 600 }}>{status}</h2>
+      <div style={{
+        width: '100%',
+        background: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        height: '16px'
+      }}>
+        <div style={{
+          width: `${progress}%`,
+          height: '100%',
+          background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
+          transition: 'width 0.3s ease-in-out',
+          borderRadius: '8px'
+        }}/>
+      </div>
+      <p style={{ marginTop: '1rem', color: 'rgba(255, 255, 255, 0.7)' }}>{progress}% complete</p>
+    </div>
+  </div>
+);
 
 // Helper functions for styling to keep the main component clean
 const getTabButtonStyle = (isActive: boolean): React.CSSProperties => ({
