@@ -81,15 +81,8 @@ class Summarizer:
         for i, section in enumerate(sections, 1):
             tasks.append(self._generate_section_summary(section, i, len(sections)))
         
-        # Also generate flashcards concurrently
-        flashcard_task = self.generate_flashcards(transcript)
-
         section_summaries = await asyncio.gather(*tasks)
         print("All section summaries generated.")
-
-        # Await the flashcard task
-        flashcards = await flashcard_task
-        print("Flashcards generated.")
 
         # Generate the main summary without section summaries in the prompt
         overall_prompt = (
@@ -115,6 +108,11 @@ class Summarizer:
             "@@STUDY_QUESTIONS_START@@\n"
             "[List 5-10 high-level study questions that cover the main topics of the entire lecture. You must provide at least 5 questions. Each question should be a string. If none, state 'None'.]\n"
             "@@STUDY_QUESTIONS_END@@\n\n"
+            "@@FLASHCARDS_START@@\n"
+            "[Generate between 10 and 20 flashcards as a JSON array of objects. Each object must have a 'question' and 'answer' field. "
+            "Example: [{\"question\": \"Q1\", \"answer\": \"A1\"}, {\"question\": \"Q2\", \"answer\": \"A2\"}]. "
+            "If no relevant flashcards can be generated, return an empty array [].]\n"
+            "@@FLASHCARDS_END@@\n\n"
             "@@OPTIONAL_REFERENCES_START@@\n"
             "[You are an academic assistant helping students by providing useful, trustworthy reference links based on the lecture transcript below.\n\n🔗 Your task:\n- Provide **at least 5 real, working URLs** relevant to the lecture content.\n- These can include:  \n  • Sources directly mentioned in the transcript (if any)  \n  • Recommended readings: academic articles, videos, or educational web resources  \n\n🎯 Reference Guidelines:\n- Return up to **10 references** as a **JSON array of objects**\n- Each object must contain:  \n  • \"title\" – a short, clear name of the resource (string)  \n  • \"url\" - a real, working URL (string)\n- Example format:\n[\n  { \"title\": \"Modern Portfolio Theory (MPT)\", \"url\": \"https://www.investopedia.com/terms/m/modernportfoliotheory.asp\" },\n  { \"title\": \"Efficient Frontier Explained\", \"url\": \"https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/modern-portfolio-theory/v/efficient-frontier\" }\n]\n- DO NOT use markdown link syntax (e.g., `[title](url)`)\n- DO NOT include any commentary or formatting outside the JSON array\n- If no references are found, return an empty array: `[]`\n\n🎓 Preferred Sources (if applicable):\n- Academic domains like `.edu`, `.org`, `https://doi.org/`, or trusted sources like:  \n  Google Scholar, PubMed, Khan Academy, MIT OpenCourseWare, Stanford Encyclopedia of Philosophy, etc.\n\n📌 If no sources were mentioned in the transcript:\n- Still provide 5 highly relevant resources  \n- At least 2-3 should be high-quality academic or educational URLs based on the topic\n]\n"
             "@@OPTIONAL_REFERENCES_END@@\n\n"
@@ -134,52 +132,10 @@ class Summarizer:
             section_summaries_json = json.dumps(section_summaries, indent=2)
             summary_text = summary_text.rstrip() + "\n\n@@SECTION_SUMMARIES_START@@\n" + section_summaries_json + "\n@@SECTION_SUMMARIES_END@@\n"
             
-            # Add flashcards to the summary text
-            flashcards_json = json.dumps(flashcards, indent=2)
-            summary_text = summary_text.rstrip() + "\n\n@@FLASHCARDS_START@@\n" + flashcards_json + "\n@@FLASHCARDS_END@@\n"
-            
             return summary_text
         except Exception as e:
             print(f"Error in summarization: {str(e)}")
             return f"Error generating summary: {str(e)}"
-
-    async def generate_flashcards(self, transcript: str) -> list[dict]:
-        """Generate flashcards from a lecture transcript."""
-        prompt = (
-            "You are an AI assistant specialized in creating study materials. Your task is to generate a set of flashcards from the provided lecture transcript. "
-            "Each flashcard should be a question-answer pair that captures a key concept, definition, or important fact from the lecture.\n\n"
-            "Generate between 10 and 20 flashcards.\n\n"
-            "Format the response as a JSON array of objects. Each object must have a 'question' and 'answer' field.\n"
-            "Example:\n"
-            "[\n"
-            '  { "question": "What is the primary function of mitochondria?", "answer": "The primary function of mitochondria is to generate most of the cell\'s supply of adenosine triphosphate (ATP), used as a source of chemical energy." },\n'
-            '  { "question": "What are the two main stages of photosynthesis?", "answer": "The two main stages of photosynthesis are the light-dependent reactions and the Calvin cycle (light-independent reactions)." }\n'
-            "]\n\n"
-            "Respond ONLY with the JSON array. Do not include any other text or formatting.\n\n"
-            "Here is the lecture transcript:\n\n"
-            f"{transcript}"
-        )
-
-        try:
-            response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5,
-                response_format={ "type": "json_object" }
-            )
-            # The response should be a JSON object with a key containing the array, e.g., {"flashcards": [...]}.
-            # Or it might be the array directly. We need to handle both.
-            response_data = json.loads(response.choices[0].message.content)
-            if isinstance(response_data, dict) and len(response_data.keys()) == 1:
-                # If it's a dictionary with one key, assume the value is the list of flashcards.
-                return list(response_data.values())[0]
-            elif isinstance(response_data, list):
-                return response_data
-            else:
-                raise ValueError("Unexpected JSON format for flashcards")
-        except Exception as e:
-            print(f"Error generating flashcards: {str(e)}")
-            return []
 
     def parse_structured_summary(self, summary_text: str) -> dict:
         parsed_data = {}
