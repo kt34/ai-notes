@@ -257,6 +257,7 @@ export function UploadComponent() {
               onDragOver={handleDragOver}
               onDrop={handleDrop}
               style={{
+                position: 'relative',
                 border: `2px dashed ${isDragging ? '#8c8eff' : file ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.2)'}`,
                 borderRadius: '12px',
                 padding: '4rem',
@@ -279,7 +280,45 @@ export function UploadComponent() {
                 disabled={isProcessing}
               />
               <label htmlFor="file-upload" style={getUploadLabelStyle(isProcessing)}>
-                {file ? `Selected: ${file.name}` : 'Choose a file or drag it here'}
+                <span style={{ flex: 1, textAlign: 'center' }}>
+                  {file ? `Selected: ${file.name}` : 'Drop a file or click to upload'}
+                </span>
+                {file && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setFile(null);
+                      setError(null);
+                    }}
+                    style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      padding: 0,
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                      e.currentTarget.style.color = '#fff';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </label>
               <p style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '1rem' }}>
                 Supported formats: DOC, DOCX, PDF, PPTX, TXT
@@ -363,5 +402,9 @@ const getUploadLabelStyle = (isLoading: boolean): React.CSSProperties => ({
   color: '#fff',
   cursor: isLoading ? 'not-allowed' : 'pointer',
   transition: 'background 0.2s ease',
-  display: 'inline-block'
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.5rem',
+  minWidth: '400px'
 });
