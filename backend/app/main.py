@@ -275,7 +275,8 @@ async def websocket_process_upload(ws: WebSocket):
             "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
             "references": structured_summary_data.get("references"),
             "section_summaries": structured_summary_data.get("section_summaries", []),
-            "study_questions": structured_summary_data.get("study_questions", [])
+            "study_questions": structured_summary_data.get("study_questions", []),
+            "flashcards": structured_summary_data.get("flashcards", [])
         }
 
         db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
@@ -469,7 +470,8 @@ async def websocket_transcribe(ws: WebSocket):
                     "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
                     "references": structured_summary_data.get("references", []),
                     "section_summaries": structured_summary_data.get("section_summaries", []),
-                    "study_questions": structured_summary_data.get("study_questions", [])
+                    "study_questions": structured_summary_data.get("study_questions", []),
+                    "flashcards": structured_summary_data.get("flashcards", [])
                 }
 
                 db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
@@ -555,3 +557,28 @@ async def get_user_stats(current_user: SupabaseUser = Depends(get_authenticated_
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/lectures/{lecture_id}/flashcards")
+async def create_flashcards(lecture_id: str, current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    try:
+        # 1. Fetch the lecture to ensure it exists and belongs to the user
+        response = supabase.table("lectures").select("transcript").eq("id", lecture_id).eq("user_id", current_user.id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Lecture not found")
+        
+        transcript = response.data[0].get("transcript")
+        if not transcript or not transcript.strip():
+            raise HTTPException(status_code=400, detail="Lecture has no content to generate flashcards from.")
+
+        # 2. Generate flashcards using the summarizer
+        flashcards = await summarizer.generate_flashcards(transcript)
+
+        if not flashcards:
+            raise HTTPException(status_code=500, detail="Failed to generate flashcards.")
+
+        return flashcards
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")

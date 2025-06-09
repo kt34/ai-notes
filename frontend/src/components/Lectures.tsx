@@ -21,6 +21,7 @@ interface Lecture {
   study_questions: string[];
   references: Reference[];
   created_at: string;
+  flashcards: Array<{ question: string; answer: string; }>;
   section_summaries: Array<{
     section_title: string;
     key_takeaways: string[];

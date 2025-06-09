@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../utils/api';
 import { SectionSummaries } from './SectionSummaries';
+import { FlashcardsModal } from './FlashcardsModal';
 
 interface Reference {
   title: string;
@@ -21,6 +22,7 @@ interface Lecture {
   study_questions: string[];
   references: Reference[];
   created_at: string;
+  flashcards: Array<{ question: string; answer: string; }>;
   section_summaries: Array<{
     section_title: string;
     key_takeaways: string[];
@@ -145,6 +147,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const [isReferencesExpanded, setIsReferencesExpanded] = useState(false);
   const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false);
+  const [showFlashcardsModal, setShowFlashcardsModal] = useState(false);
   const { token } = useAuth();
 
   const formatLectureForCopy = (lecture: Lecture): string => {
@@ -221,6 +224,13 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
       content += '📝 Study Questions\n';
       content += '---------------\n';
       content += lecture.study_questions.map((q, i) => `${i + 1}. ${q}`).join('\n\n') + '\n\n';
+    }
+
+    // Flashcards
+    if (lecture.flashcards?.length) {
+      content += '🃏 Flashcards\n';
+      content += '-----------\n';
+      content += lecture.flashcards.map((card, i) => `Q${i + 1}: ${card.question}\nA${i + 1}: ${card.answer}`).join('\n\n') + '\n\n';
     }
 
     return content;
@@ -361,43 +371,14 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     </div>
   );
 
-  // function renderSection(section: Lecture['section_summaries'][0], index: number) {
-  //   return (
-  //     <div key={index} style={{
-  //       background: 'rgba(255, 255, 255, 0.04)',
-  //       borderRadius: '8px',
-  //       padding: '1.5rem',
-  //       border: '1px solid rgba(255, 255, 255, 0.1)'
-  //     }}>
-  //       <h4 style={{ color: '#fff', fontSize: '1.2rem', margin: '0 0 1rem 0' }}>{section.section_title}</h4>
-        
-  //       {renderList("Key Takeaways", section.key_takeaways)}
-  //       {renderList("New Vocabulary / Concepts", section.new_vocabulary)}
-  //       {renderList("Study Questions", section.study_questions)}
-  //       {renderList("Examples", section.examples)}
-  //     </div>
-  //   );
-  // }
-
-  // function renderList(title: string, items: string[] | undefined) {
-  //   if (!items || items.length === 0) {
-  //     return null;
-  //   }
-
-  //   return (
-  //     <div style={{ marginBottom: '1rem' }}>
-  //       <h5 style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1rem', margin: '0 0 0.5rem 0' }}>{title}</h5>
-  //       <ul style={{ listStyleType: 'disc', paddingLeft: '20px', margin: 0 }}>
-  //         {items.map((item, index) => (
-  //           <li key={index} style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.25rem' }}>{item}</li>
-  //         ))}
-  //       </ul>
-  //     </div>
-  //   );
-  // }
-
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      {showFlashcardsModal && lecture && lecture.flashcards && lecture.flashcards.length > 0 && (
+        <FlashcardsModal 
+          flashcards={lecture.flashcards}
+          onClose={() => setShowFlashcardsModal(false)}
+        />
+      )}
       <div style={{ marginBottom: '2rem' }}>
         <button
           onClick={onBack}
@@ -462,6 +443,29 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               <span>{calculateReadingTime(lecture.transcript)}</span>
               <span>•</span>
               <CopyAllButton text={formatLectureForCopy(lecture)} />
+              {lecture.flashcards && lecture.flashcards.length > 0 && (
+                <>
+                  <span>•</span>
+                  <button
+                    onClick={() => setShowFlashcardsModal(true)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '6px',
+                      padding: '0.25rem 0.6rem',
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      transition: 'all 0.2s ease',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    View Flashcards
+                  </button>
+                </>
+              )}
             </div>
 
             <p style={{ 
