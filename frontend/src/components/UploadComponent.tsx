@@ -243,6 +243,15 @@ export function UploadComponent() {
               }}
               disabled={isProcessing}
             />
+            <p style={{ 
+              color: 'rgba(255, 255, 255, 0.5)', 
+              fontSize: '0.9rem', 
+              marginTop: '0.75rem',
+              marginBottom: '0.5rem',
+              textAlign: 'left'
+            }}>
+              Note: AI summary may be less accurate if text is shorter than 500 words
+            </p>
             <button type="submit" style={getSubmitButtonStyle(isProcessing)} disabled={isProcessing || !textContent}>
               {isProcessing ? 'Processing...' : 'Generate from Text'}
             </button>
