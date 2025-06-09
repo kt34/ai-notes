@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../utils/api';
 
+interface Reference {
+  title: string;
+  url: string;
+}
+
 interface Lecture {
   id: string;
   user_id: string;
@@ -13,7 +18,7 @@ interface Lecture {
   key_concepts: string[];
   main_points_covered: string[];
   conclusion_takeaways: string[];
-  references: string[];
+  references: Reference[];
   created_at: string;
   section_summaries: Array<{
     section_title: string;
@@ -21,7 +26,7 @@ interface Lecture {
     new_vocabulary: string[];
     study_questions: string[];
     examples: string[];
-    useful_references: string[];
+    useful_references: Reference[];
   }>;
 }
 

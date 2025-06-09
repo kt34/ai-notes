@@ -43,7 +43,7 @@ class Summarizer:
             "- new_vocabulary: A list of 1-4 new important keywords or technical terms as STRINGS. If none, return an empty list.\n"
             "- study_questions: A list of 1-2 pointed questions as STRINGS that a student should be able to answer after this section. This promotes active recall.\n"
             "- examples: A list of 1-2 specific examples, analogies, real-world references, or illustrative scenarios mentioned in this section. These may include brief illustrative phrases. You must return at least 2 examples. If none, return an empty list.\n\n"
-            "- useful_references: A list of 1-2 real, working URLs to high-quality external resources (like Wikipedia, academic sites, or reputable educational websites) that provide more information on the topics discussed in this section. You must return at least 2 references. If no references can be found, return an empty list. URLs must be fully qualified.\n\n"
+            "- useful_references: You are an academic assistant helping students by providing useful, trustworthy reference links based on the lecture transcript below.\n\n🔗 Your task:\n- You must provide 2 real, working URLs** relevant to the lecture content.\n- These can include:  \n  • Sources directly mentioned in the transcript (if any)  \n  • Recommended readings: academic articles, videos, or educational web resources  \n\n🎯 Reference Guidelines:\n- Return up to **2 references** as a **JSON array of objects**\n- Each object must contain:  \n  • \"title\" - a short, clear name of the resource (string)  \n  • \"url\" - a real, working URL (string)\n- Example format:\n[\n  { \"title\": \"Modern Portfolio Theory (MPT)\", \"url\": \"https://www.investopedia.com/terms/m/modernportfoliotheory.asp\" },\n  { \"title\": \"Efficient Frontier Explained\", \"url\": \"https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/modern-portfolio-theory/v/efficient-frontier\" }\n]\n- DO NOT use markdown link syntax (e.g., `[title](url)`)\n- DO NOT include any commentary or formatting outside the JSON array\n- If no references are found, return an empty array: `[]`\n\n🎓 Preferred Sources (if applicable):\n- Academic domains like `.edu`, `.org`, `https://doi.org/`, or trusted sources like:  \n  Google Scholar, PubMed, Khan Academy, MIT OpenCourseWare, Stanford Encyclopedia of Philosophy, etc.\n\n📌 If no sources were mentioned in the transcript:\n- Still provide 2 highly relevant resources  \n- At least 1-2 should be high-quality academic or educational URLs based on the topic\n"
             "Respond ONLY with the JSON object. Do not include any other text or formatting.\n\n"
             "Here is the section text:\n\n"
             f"{section}"
@@ -106,18 +106,7 @@ class Summarizer:
             "[Write a short, yet comprehensive paragraph summarizing the main conclusions or key takeaways from the entire lecture. This should synthesize the most important information for a final review. This section should be a paragraph, not bullet points.]\n"
             "@@CONCLUSION_TAKEAWAYS_END@@\n\n"
             "@@OPTIONAL_REFERENCES_START@@\n"
-            "[Provide references in the following format. Each reference MUST be a single line starting with '-' and MUST contain an actual, working URL (not placeholder text):\n\n"
-            "For academic papers:\n"
-            "- https://doi.org/[doi-number]\n\n"
-            "For online resources:\n"
-            "- https://[exact-url]\n\n"
-            "Example format:\n"
-            "- https://www.investopedia.com/terms/m/modernportfoliotheory.asp\n\n"
-            "Remember:\n"
-            "1. Each URL must be a real, working URL (not a placeholder)\n"
-            "2. Include both mentioned sources and recommended reading\n"
-            "3. If no references were mentioned, provide at least 2-3 relevant recommended resources with actual URLs\n"
-            "4. Do not use markdown link syntax [...](...)]\n"
+            "[You are an academic assistant helping students by providing useful, trustworthy reference links based on the lecture transcript below.\n\n🔗 Your task:\n- Provide **at least 5 real, working URLs** relevant to the lecture content.\n- These can include:  \n  • Sources directly mentioned in the transcript (if any)  \n  • Recommended readings: academic articles, videos, or educational web resources  \n\n🎯 Reference Guidelines:\n- Return up to **10 references** as a **JSON array of objects**\n- Each object must contain:  \n  • \"title\" – a short, clear name of the resource (string)  \n  • \"url\" - a real, working URL (string)\n- Example format:\n[\n  { \"title\": \"Modern Portfolio Theory (MPT)\", \"url\": \"https://www.investopedia.com/terms/m/modernportfoliotheory.asp\" },\n  { \"title\": \"Efficient Frontier Explained\", \"url\": \"https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/modern-portfolio-theory/v/efficient-frontier\" }\n]\n- DO NOT use markdown link syntax (e.g., `[title](url)`)\n- DO NOT include any commentary or formatting outside the JSON array\n- If no references are found, return an empty array: `[]`\n\n🎓 Preferred Sources (if applicable):\n- Academic domains like `.edu`, `.org`, `https://doi.org/`, or trusted sources like:  \n  Google Scholar, PubMed, Khan Academy, MIT OpenCourseWare, Stanford Encyclopedia of Philosophy, etc.\n\n📌 If no sources were mentioned in the transcript:\n- Still provide 5 highly relevant resources  \n- At least 2-3 should be high-quality academic or educational URLs based on the topic\n]\n"
             "@@OPTIONAL_REFERENCES_END@@\n\n"
             "Here is the lecture transcript:\n\n"
             f"{transcript}"
@@ -145,9 +134,7 @@ class Summarizer:
 
         array_sections_keys = [
             "key_concepts", 
-            "main_points_covered", 
-            "references",
-            "section_summaries"
+            "main_points_covered"
         ]
 
         sections = {
@@ -156,34 +143,33 @@ class Summarizer:
             "key_concepts": "KEY_CONCEPTS",
             "main_points_covered": "MAIN_POINTS",
             "conclusion_takeaways": "CONCLUSION_TAKEAWAYS",
+        }
+        
+        json_sections = {
             "references": "OPTIONAL_REFERENCES",
             "section_summaries": "SECTION_SUMMARIES"
         }
 
-        # First, try to extract section summaries specifically
-        section_summaries_match = re.search(r"@@SECTION_SUMMARIES_START@@\s*(.*?)\s*@@SECTION_SUMMARIES_END@@", summary_text, re.DOTALL)
-        if section_summaries_match:
-            try:
-                section_summaries_content = section_summaries_match.group(1).strip()
-                if section_summaries_content and section_summaries_content.lower() not in ["none", "not available"]:
-                    parsed_data["section_summaries"] = json.loads(section_summaries_content)
-                    print(f"Successfully parsed {len(parsed_data['section_summaries'])} section summaries")
-                else:
-                    parsed_data["section_summaries"] = []
-                    print("No section summaries content found between markers")
-            except json.JSONDecodeError as e:
-                print(f"Error parsing section summaries JSON: {e}")
-                print("Raw section summaries content:", section_summaries_content)
-                parsed_data["section_summaries"] = []
-        else:
-            print("Section summaries markers not found in text")
-            parsed_data["section_summaries"] = []
+        for key, section_name in json_sections.items():
+            start_marker = f"@@{section_name}_START@@"
+            end_marker = f"@@{section_name}_END@@"
+            match = re.search(f"{re.escape(start_marker)}(.*?){re.escape(end_marker)}", summary_text, re.DOTALL)
+            if match:
+                try:
+                    content = match.group(1).strip()
+                    if content and content.lower() not in ["none", "not available", "[]"]:
+                        parsed_data[key] = json.loads(content)
+                        print(f"Successfully parsed JSON for {key}")
+                    else:
+                        parsed_data[key] = []
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing JSON for section {key}: {e}")
+                    parsed_data[key] = []
+            else:
+                print(f"Markers for JSON section '{section_name}' not found.")
+                parsed_data[key] = []
 
-        # Then parse the rest of the sections
         for key, section_name in sections.items():
-            if key == "section_summaries":
-                continue  # Already handled above
-                
             start_marker = f"@@{section_name}_START@@"
             end_marker = f"@@{section_name}_END@@"
             

@@ -40,6 +40,19 @@ function CopyButton({ text, label = "Copy", style = {} }: { text: string; label?
   );
 }
 
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch (e) {
+    return url;
+  }
+};
+
+interface Reference {
+  title: string;
+  url: string;
+}
+
 // Updated interface to match the new data structure from the backend
 interface SectionSummary {
   section_title: string;
@@ -47,7 +60,7 @@ interface SectionSummary {
   new_vocabulary: string[];
   study_questions: string[];
   examples: string[];
-  useful_references: string[];
+  useful_references: Reference[];
 }
 
 interface SectionSummariesProps {
@@ -76,7 +89,7 @@ export function SectionSummaries({ sections }: SectionSummariesProps) {
       content += `**Study Questions:**\n${section.study_questions.map(q => `- ${q}`).join('\n')}\n\n`;
     }
     if (section.useful_references?.length > 0) {
-      content += `**Useful References:**\n${section.useful_references.map(r => `- ${r}`).join('\n')}\n\n`;
+      content += `**Suggested References:**\n${section.useful_references.map(r => `- ${r.title} (${r.url})`).join('\n')}\n\n`;
     }
     return content.trim();
   };
@@ -225,25 +238,31 @@ export function SectionSummaries({ sections }: SectionSummariesProps) {
 
               {section.useful_references?.length > 0 && (
                 <DetailSection title="Suggested References" icon="🔗">
-                   {/* <ul style={{ margin: '0.75rem 0 0 0', padding: 0, listStyle: 'none', color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}> */}
-                   <ul style={{ margin: '0.75rem 0 0 1.5rem', padding: 0, color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                   <ul style={{ margin: '0.75rem 0 0 1.5rem', padding: 0, color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {section.useful_references.map((ref, i) => (
                       <li key={i}>
                         <a
-                          href={ref}
+                          href={ref.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
                             color: '#8c8eff',
                             textDecoration: 'none',
                             fontSize: '0.9rem',
-                            wordBreak: 'break-all'
+                            fontWeight: 500
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                           onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                         >
-                          {ref}
+                          {ref.title}
                         </a>
+                        <p style={{
+                          fontSize: '0.85rem',
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          margin: '0.25rem 0 0'
+                        }}>
+                          Source: {getDomain(ref.url)}
+                        </p>
                       </li>
                     ))}
                   </ul>

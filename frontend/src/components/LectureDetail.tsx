@@ -3,6 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../utils/api';
 import { SectionSummaries } from './SectionSummaries';
 
+interface Reference {
+  title: string;
+  url: string;
+}
+
 interface Lecture {
   id: string;
   user_id: string;
@@ -13,7 +18,7 @@ interface Lecture {
   key_concepts: string[];
   main_points_covered: string[];
   conclusion_takeaways: string[];
-  references: string[];
+  references: Reference[];
   created_at: string;
   section_summaries: Array<{
     section_title: string;
@@ -21,7 +26,7 @@ interface Lecture {
     new_vocabulary: string[];
     study_questions: string[];
     examples: string[];
-    useful_references: string[];
+    useful_references: Reference[];
   }>;
 }
 
@@ -94,6 +99,34 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
         const data = await apiRequest(`/lectures/${lectureId}`, {
           token
         });
+
+        // Defensively parse stringified JSON in references
+        if (data.references && data.references.length > 0 && typeof data.references[0] === 'string') {
+          data.references = data.references.map((refStr: string) => {
+            try {
+              return JSON.parse(refStr);
+            } catch (e) {
+              console.error("Failed to parse reference string:", refStr, e);
+              return { title: "Invalid Reference", url: "#" };
+            }
+          });
+        }
+        
+        if (data.section_summaries && data.section_summaries.length > 0) {
+          data.section_summaries.forEach((section: any) => {
+            if (section.useful_references && section.useful_references.length > 0 && typeof section.useful_references[0] === 'string') {
+              section.useful_references = section.useful_references.map((refStr: string) => {
+                try {
+                  return JSON.parse(refStr);
+                } catch (e) {
+                  console.error("Failed to parse useful_reference string:", refStr, e);
+                  return { title: "Invalid Reference", url: "#" };
+                }
+              });
+            }
+          });
+        }
+
         setLecture(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -120,6 +153,14 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     const words = text.trim().split(/\s+/).length;
     const minutes = Math.ceil(words / wordsPerMinute);
     return `${minutes} min read`;
+  };
+
+  const getDomain = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch (e) {
+      return url;
+    }
   };
 
   if (isLoading) {
@@ -406,32 +447,39 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               <ul style={{ 
                 listStyle: 'none', 
                 padding: 0,
-                marginBottom: '2rem'
+                marginBottom: '2rem',
+                textAlign: 'left'
               }}>
                 {lecture.references.map((ref, index) => (
-                  <li key={index} style={{
-                    marginBottom: '0.5rem'
-                  }}>
+                  <li key={index} style={{ marginBottom: '1rem' }}>
                     <a 
-                      href={ref}
+                      href={ref.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        color: '#646cff',
+                        color: '#a7a9ff',
                         textDecoration: 'none',
-                        transition: 'all 0.2s ease'
+                        transition: 'color 0.2s ease',
+                        fontWeight: 500
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#8c8eff';
+                        e.currentTarget.style.color = '#c0c2ff';
                         e.currentTarget.style.textDecoration = 'underline';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '#646cff';
+                        e.currentTarget.style.color = '#a7a9ff';
                         e.currentTarget.style.textDecoration = 'none';
                       }}
                     >
-                      {ref}
+                      {ref.title}
                     </a>
+                    <p style={{
+                      fontSize: '0.85rem',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      margin: '0.25rem 0 0'
+                    }}>
+                      Source: {getDomain(ref.url)}
+                    </p>
                   </li>
                 ))}
               </ul>
