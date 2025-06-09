@@ -107,35 +107,36 @@ function CopyAllButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       style={{
-        background: copied ? 'rgba(86, 88, 245, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-        border: `1px solid ${copied ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
-        borderRadius: '6px',
-        padding: '0.25rem 0.5rem',
-        color: copied ? '#8c8eff' : 'rgba(255, 255, 255, 0.6)',
+        background: copied ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+        border: `1px solid ${copied ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'}`,
+        borderRadius: '8px',
+        padding: '0.5rem 1rem',
+        color: copied ? '#fff' : 'rgba(255, 255, 255, 0.6)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: '0.5rem',
         transition: 'all 0.2s ease',
         fontSize: '0.9rem',
-        height: '24px',
-        width: '24px'
+        fontWeight: 500,
       }}
       onMouseEnter={(e) => {
         if (!copied) {
           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
           e.currentTarget.style.color = '#fff';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
         }
       }}
       onMouseLeave={(e) => {
         if (!copied) {
           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
           e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
         }
       }}
-      title={copied ? "Copied!" : "Copy all notes"}
     >
-      {copied ? '✓' : '📋'}
+      <span style={{ fontSize: '1.1rem' }}>{copied ? '✓' : '📋'}</span>
+      {copied ? 'Copied!' : 'Copy Notes'}
     </button>
   );
 }
@@ -449,11 +450,11 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                   <button
                     onClick={() => setShowFlashcardsModal(true)}
                     style={{
-                      background: 'rgba(86, 88, 245, 0.1)',
-                      border: '1px solid rgba(86, 88, 245, 0.2)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '8px',
                       padding: '0.5rem 1rem',
-                      color: '#8c8eff',
+                      color: 'rgba(255, 255, 255, 0.6)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -463,16 +464,18 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                       fontWeight: 500,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(86, 88, 245, 0.15)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.color = '#fff';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(86, 88, 245, 0.1)';
-                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                     }}
                   >
                     <span style={{ fontSize: '1.1rem' }}>🃏</span>
-                    Study Flashcards ({lecture.flashcards.length})
+                    Flashcards ({lecture.flashcards.length})
                   </button>
                 </>
               )}
