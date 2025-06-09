@@ -187,40 +187,40 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     </div>
   );
 
-  function renderSection(section: Lecture['section_summaries'][0], index: number) {
-    return (
-      <div key={index} style={{
-        background: 'rgba(255, 255, 255, 0.04)',
-        borderRadius: '8px',
-        padding: '1.5rem',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
-      }}>
-        <h4 style={{ color: '#fff', fontSize: '1.2rem', margin: '0 0 1rem 0' }}>{section.section_title}</h4>
+  // function renderSection(section: Lecture['section_summaries'][0], index: number) {
+  //   return (
+  //     <div key={index} style={{
+  //       background: 'rgba(255, 255, 255, 0.04)',
+  //       borderRadius: '8px',
+  //       padding: '1.5rem',
+  //       border: '1px solid rgba(255, 255, 255, 0.1)'
+  //     }}>
+  //       <h4 style={{ color: '#fff', fontSize: '1.2rem', margin: '0 0 1rem 0' }}>{section.section_title}</h4>
         
-        {renderList("Key Takeaways", section.key_takeaways)}
-        {renderList("New Vocabulary / Concepts", section.new_vocabulary)}
-        {renderList("Study Questions", section.study_questions)}
-        {renderList("Examples", section.examples)}
-      </div>
-    );
-  }
+  //       {renderList("Key Takeaways", section.key_takeaways)}
+  //       {renderList("New Vocabulary / Concepts", section.new_vocabulary)}
+  //       {renderList("Study Questions", section.study_questions)}
+  //       {renderList("Examples", section.examples)}
+  //     </div>
+  //   );
+  // }
 
-  function renderList(title: string, items: string[] | undefined) {
-    if (!items || items.length === 0) {
-      return null;
-    }
+  // function renderList(title: string, items: string[] | undefined) {
+  //   if (!items || items.length === 0) {
+  //     return null;
+  //   }
 
-    return (
-      <div style={{ marginBottom: '1rem' }}>
-        <h5 style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1rem', margin: '0 0 0.5rem 0' }}>{title}</h5>
-        <ul style={{ listStyleType: 'disc', paddingLeft: '20px', margin: 0 }}>
-          {items.map((item, index) => (
-            <li key={index} style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.25rem' }}>{item}</li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
+  //   return (
+  //     <div style={{ marginBottom: '1rem' }}>
+  //       <h5 style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1rem', margin: '0 0 0.5rem 0' }}>{title}</h5>
+  //       <ul style={{ listStyleType: 'disc', paddingLeft: '20px', margin: 0 }}>
+  //         {items.map((item, index) => (
+  //           <li key={index} style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.25rem' }}>{item}</li>
+  //         ))}
+  //       </ul>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
