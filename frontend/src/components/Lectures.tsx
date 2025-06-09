@@ -12,11 +12,17 @@ interface Lecture {
   topic_summary_sentence: string;
   key_concepts: string[];
   main_points_covered: string[];
-  examples_mentioned: string[];
-  important_quotes: string[];
   conclusion_takeaways: string[];
   references: string[];
   created_at: string;
+  section_summaries: Array<{
+    section_title: string;
+    key_takeaways: string[];
+    new_vocabulary: string[];
+    study_questions: string[];
+    examples: string[];
+    useful_references: string[];
+  }>;
 }
 
 // Icon Components for a cleaner look
@@ -396,7 +402,7 @@ export function Lectures() {
                   color: '#646cff'
                 }}>
                   <span>✨</span>
-                  {lecture.key_concepts.length} key concepts
+                  {lecture.key_concepts?.length || 0} key concepts
                 </div>
               )}
             </div>
@@ -413,44 +419,33 @@ export function Lectures() {
               }}>
                 {lecture.lecture_title}
               </h3>
-              <p style={{ 
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontSize: '0.875rem',
+              <p style={{
+                margin: '0.5rem 0 1.5rem',
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontSize: '0.9rem',
                 lineHeight: '1.5',
-                marginBottom: '1rem'
+                maxHeight: '4.5rem', /* 3 lines */
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
               }}>
-                {lecture.topic_summary_sentence}
+                {lecture.topic_summary_sentence || 'No summary available.'}
               </p>
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
-                marginBottom: '1rem'
-              }}>
-                {lecture.key_concepts.slice(0, 3).map((concept, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      background: 'rgba(86, 88, 245, 0.1)',
-                      border: '1px solid rgba(86, 88, 245, 0.2)',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '12px',
-                      color: 'rgba(255, 255, 255, 0.8)',
-                      fontSize: '0.75rem'
-                    }}
-                  >
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '56px', overflow: 'hidden' }}>
+                {(lecture.key_concepts || []).slice(0, 5).map(concept => (
+                  <span key={concept} style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    padding: '0.25rem 0.6rem',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                  }}>
                     {concept}
                   </span>
                 ))}
-                {lecture.key_concepts.length > 3 && (
-                  <span style={{
-                    color: 'rgba(255, 255, 255, 0.4)',
-                    fontSize: '0.75rem',
-                    padding: '0.25rem 0'
-                  }}>
-                    +{lecture.key_concepts.length - 3} more
-                  </span>
-                )}
               </div>
             </div>
 
@@ -467,11 +462,11 @@ export function Lectures() {
                 alignItems: 'center',
                 gap: '0.5rem'
               }}>
-                <span>📝 {lecture.main_points_covered.length} points</span>
+                <span>📝 {lecture.main_points_covered?.length || 0} points</span>
                 <span>•</span>
-                <span>💬 {lecture.important_quotes.length} quotes</span>
+                <span>📑 {lecture.section_summaries?.length || 0} sections</span>
               </div>
-              <span>{calculateReadingTime(lecture.transcript)}</span>
+              <span>{calculateReadingTime(lecture.transcript || '')}</span>
             </div>
           </div>
         ))}

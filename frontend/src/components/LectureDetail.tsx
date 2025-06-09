@@ -12,8 +12,6 @@ interface Lecture {
   topic_summary_sentence: string;
   key_concepts: string[];
   main_points_covered: string[];
-  examples_mentioned: string[];
-  important_quotes: string[];
   conclusion_takeaways: string[];
   references: string[];
   created_at: string;
@@ -22,7 +20,8 @@ interface Lecture {
     key_takeaways: string[];
     new_vocabulary: string[];
     study_questions: string[];
-    context_link: string;
+    examples: string[];
+    useful_references: string[];
   }>;
 }
 
@@ -188,6 +187,41 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
     </div>
   );
 
+  function renderSection(section: Lecture['section_summaries'][0], index: number) {
+    return (
+      <div key={index} style={{
+        background: 'rgba(255, 255, 255, 0.04)',
+        borderRadius: '8px',
+        padding: '1.5rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <h4 style={{ color: '#fff', fontSize: '1.2rem', margin: '0 0 1rem 0' }}>{section.section_title}</h4>
+        
+        {renderList("Key Takeaways", section.key_takeaways)}
+        {renderList("New Vocabulary / Concepts", section.new_vocabulary)}
+        {renderList("Study Questions", section.study_questions)}
+        {renderList("Examples", section.examples)}
+      </div>
+    );
+  }
+
+  function renderList(title: string, items: string[] | undefined) {
+    if (!items || items.length === 0) {
+      return null;
+    }
+
+    return (
+      <div style={{ marginBottom: '1rem' }}>
+        <h5 style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1rem', margin: '0 0 0.5rem 0' }}>{title}</h5>
+        <ul style={{ listStyleType: 'disc', paddingLeft: '20px', margin: 0 }}>
+          {items.map((item, index) => (
+            <li key={index} style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.25rem' }}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <div style={{ marginBottom: '2rem' }}>
@@ -262,40 +296,18 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           </div>
 
           <SectionTitle>✨ Key Concepts</SectionTitle>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.75rem'
-          }}>
-            {lecture.key_concepts && lecture.key_concepts.length > 0 ? (
-              lecture.key_concepts.map((concept, index) => (
-                <li key={index} style={{
-                  background: 'rgba(86, 88, 245, 0.1)',
-                  border: '1px solid rgba(86, 88, 245, 0.2)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '20px',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontSize: '0.9rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>•</span>
-                  {concept}
-                </li>
-              ))
-            ) : (
-              <div style={{
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontStyle: 'italic',
-                padding: '0.5rem',
-                textAlign: 'left'
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {lecture.key_concepts.map((concept, index) => (
+              <li key={index} style={{ 
+                background: 'rgba(86, 88, 245, 0.15)',
+                color: '#d4d4ff',
+                padding: '0.4rem 0.8rem',
+                borderRadius: '6px',
+                fontSize: '0.9rem'
               }}>
-                No key concepts identified for this lecture
-              </div>
-            )}
+                {concept}
+              </li>
+            ))}
           </ul>
 
           <SectionTitle 
@@ -339,7 +351,7 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                     justifyContent: 'center',
                     fontSize: '0.8rem'
                   }}>
-                    {index + 1}
+                    -
                   </span>
                   {point}
                 </li>
@@ -356,111 +368,13 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             )}
           </ul>
 
-          <SectionTitle
-            copyButton={
-              <CopyButton 
-                text={lecture.examples_mentioned?.join('\n\n') || ''} 
-                label="Copy All Examples"
-              />
-            }
-          >
-            💡 Examples
-          </SectionTitle>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem'
-          }}>
-            {lecture.examples_mentioned && lecture.examples_mentioned.length > 0 ? (
-              lecture.examples_mentioned.map((example, index) => (
-                <li key={index} style={{
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  padding: '0.75rem 1rem',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  borderRadius: '8px',
-                  lineHeight: '1.5',
-                  textAlign: 'left',
-                  display: 'flex',
-                  gap: '1rem',
-                  alignItems: 'flex-start',
-                  borderLeft: '3px solid rgba(86, 88, 245, 0.3)'
-                }}>
-                  <span style={{ 
-                    color: '#8c8eff',
-                    fontSize: '1.1rem',
-                    opacity: 0.8
-                  }}>
-                    →
-                  </span>
-                  {example}
-                </li>
-              ))
-            ) : (
-              <div style={{
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontStyle: 'italic',
-                padding: '0.5rem',
-                textAlign: 'left'
-              }}>
-                No specific examples were mentioned in this lecture
-              </div>
-            )}
-          </ul>
-
-          <SectionTitle
-            copyButton={
-              lecture.important_quotes && lecture.important_quotes.length > 0 ? (
-                <CopyButton 
-                  text={lecture.important_quotes.join('\n\n')} 
-                  label="Copy All Quotes"
-                />
-              ) : null
-            }
-          >
-            💬 Important Quotes
-          </SectionTitle>
-          {lecture.important_quotes && lecture.important_quotes.length > 0 ? (
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
-            }}>
-              {lecture.important_quotes.map((quote, index) => (
-                <div key={index} style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  padding: '1rem 1.25rem',
-                  borderRadius: '8px',
-                  borderLeft: '3px solid rgba(86, 88, 245, 0.5)',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontStyle: 'italic',
-                  textAlign: 'left',
-                  position: 'relative'
-                }}>
-                  <span style={{
-                    position: 'absolute',
-                    left: '-2px',
-                    top: '-8px',
-                    color: 'rgba(140, 142, 255, 0.6)',
-                    fontSize: '1.5rem'
-                  }}></span>
-                  {quote}
-                </div>
-              ))}
-            </ul>
-          ) : (
-            <div style={{
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontStyle: 'italic',
-              padding: '0.5rem',
-              textAlign: 'left'
-            }}>
-              No notable quotes were captured from this lecture
-            </div>
-          )}
+          {/* Section-by-Section Breakdown */}
+          <div style={{ marginBottom: '2rem' }}>
+            <SectionTitle>
+              <span>📑 Section-by-Section Breakdown</span>
+            </SectionTitle>
+            <SectionSummaries sections={lecture.section_summaries} />
+          </div>
 
           <SectionTitle>🎯 Conclusion</SectionTitle>
           {lecture.conclusion_takeaways ? (
@@ -523,14 +437,6 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               </ul>
             </>
           )}
-
-          {/* Section-by-Section Breakdown */}
-          <div style={{ marginBottom: '2rem' }}>
-            <SectionTitle>
-              <span>📑 Section-by-Section Breakdown</span>
-            </SectionTitle>
-            <SectionSummaries sections={lecture.section_summaries} />
-          </div>
 
           {/* Full Transcript (at the very bottom) */}
           <div style={{

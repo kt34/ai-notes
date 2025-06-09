@@ -272,8 +272,6 @@ async def websocket_process_upload(ws: WebSocket):
             "topic_summary_sentence": structured_summary_data.get("topic_summary_sentence"),
             "key_concepts": structured_summary_data.get("key_concepts"),
             "main_points_covered": structured_summary_data.get("main_points_covered"),
-            "examples_mentioned": structured_summary_data.get("examples_mentioned"),
-            "important_quotes": structured_summary_data.get("important_quotes"),
             "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
             "references": structured_summary_data.get("references"),
             "section_summaries": structured_summary_data.get("section_summaries", [])
@@ -465,10 +463,8 @@ async def websocket_transcribe(ws: WebSocket):
                     "summary": summary, 
                     "lecture_title": structured_summary_data.get("lecture_title"),
                     "topic_summary_sentence": structured_summary_data.get("topic_summary_sentence"),
-                    "key_concepts": structured_summary_data.get("key_concepts"),
-                    "main_points_covered": structured_summary_data.get("main_points_covered"),
-                    "examples_mentioned": structured_summary_data.get("examples_mentioned"),
-                    "important_quotes": structured_summary_data.get("important_quotes"),
+                    "key_concepts": structured_summary_data.get("key_concepts", []),
+                    "main_points_covered": structured_summary_data.get("main_points_covered", []),
                     "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
                     "references": structured_summary_data.get("references", []),
                     "section_summaries": structured_summary_data.get("section_summaries", [])

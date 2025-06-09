@@ -39,10 +39,11 @@ class Summarizer:
             "The summary should be distinct from a simple transcript reduction and focus on actionable learning points.\n\n"
             "Format the response as a JSON object with the following fields and STRICT constraints:\n"
             "- section_title: A very short, descriptive title for this section (e.g., 'Introduction to Photosynthesis'). MUST be a string.\n"
-            "- key_takeaways: A list of 2-3 of the most critical concepts or conclusions as STRINGS. Each string MUST be a complete sentence. If none, return an empty list.\n"
-            "- new_vocabulary: A list of 1-5 new important keywords or technical terms as STRINGS. If none, return an empty list.\n"
+            "- key_takeaways: A list of 2-3 of the most critical concepts or conclusions as STRINGS. You must return at least 2 key takeaways. Each string MUST be a complete sentence. If none, return an empty list.\n"
+            "- new_vocabulary: A list of 1-4 new important keywords or technical terms as STRINGS. If none, return an empty list.\n"
             "- study_questions: A list of 1-2 pointed questions as STRINGS that a student should be able to answer after this section. This promotes active recall.\n"
-            "- context_link: A single sentence as a STRING explaining how this section connects to the previous one or what it sets up for the next section.\n\n"
+            "- examples: A list of 1-2 specific examples, analogies, real-world references, or illustrative scenarios mentioned in this section. These may include brief illustrative phrases. You must return at least 2 examples. If none, return an empty list.\n\n"
+            "- useful_references: A list of 1-2 real, working URLs to high-quality external resources (like Wikipedia, academic sites, or reputable educational websites) that provide more information on the topics discussed in this section. You must return at least 2 references. If no references can be found, return an empty list. URLs must be fully qualified.\n\n"
             "Respond ONLY with the JSON object. Do not include any other text or formatting.\n\n"
             "Here is the section text:\n\n"
             f"{section}"
@@ -55,6 +56,7 @@ class Summarizer:
                 temperature=0.4, # Slightly increased for more creative questions/links
                 response_format={ "type": "json_object" }
             )
+            print(f"Response: {response.choices[0].message.content}")
             return json.loads(response.choices[0].message.content)
         except Exception as e:
             print(f"Error generating section summary: {str(e)}")
@@ -63,7 +65,8 @@ class Summarizer:
                 "key_takeaways": [],
                 "new_vocabulary": [],
                 "study_questions": [],
-                "context_link": f"Error generating summary for section {section_number}: {str(e)}"
+                "examples": [],
+                "useful_references": []
             }
 
     async def summarize(self, transcript: str) -> str:
@@ -99,12 +102,6 @@ class Summarizer:
             "@@MAIN_POINTS_START@@\n"
             "[This is a CRITICAL section. Summarize the main ideas presented in the lecture in the order they appear. Each bullet point using '-' MUST be detailed and comprehensive, potentially spanning multiple sentences to fully explain the idea, its implications, or context. Do NOT provide short, Vague phrases. Aim for explanations that would help someone thoroughly understand the topic without re-listening to the lecture. If no main points are discernible, state 'None'.]\n"
             "@@MAIN_POINTS_END@@\n\n"
-            "@@EXAMPLES_MENTIONED_START@@\n"
-            "[List any examples, case studies, or specific illustrations mentioned. Each bullet point using '-' should describe the example in sufficient detail to understand its relevance and how it supports a main point. These should be more than just a name; explain the example. If no examples are mentioned, state 'None'.]\n"
-            "@@EXAMPLES_MENTIONED_END@@\n\n"
-            "@@IMPORTANT_QUOTES_START@@\n"
-            "[Extract any notable or directly quoted phrases or impactful statements from the instructor. Use standard markdown bullets '-'. If none, state 'None'.]\n"
-            "@@IMPORTANT_QUOTES_END@@\n\n"
             "@@CONCLUSION_TAKEAWAYS_START@@\n"
             "[Write a short, yet comprehensive paragraph summarizing the main conclusions or key takeaways from the entire lecture. This should synthesize the most important information for a final review. This section should be a paragraph, not bullet points.]\n"
             "@@CONCLUSION_TAKEAWAYS_END@@\n\n"
@@ -149,9 +146,7 @@ class Summarizer:
         array_sections_keys = [
             "key_concepts", 
             "main_points_covered", 
-            "examples_mentioned",
             "references",
-            "important_quotes",
             "section_summaries"
         ]
 
@@ -160,8 +155,6 @@ class Summarizer:
             "topic_summary_sentence": "TOPIC_SUMMARY",
             "key_concepts": "KEY_CONCEPTS",
             "main_points_covered": "MAIN_POINTS",
-            "examples_mentioned": "EXAMPLES_MENTIONED",
-            "important_quotes": "IMPORTANT_QUOTES",
             "conclusion_takeaways": "CONCLUSION_TAKEAWAYS",
             "references": "OPTIONAL_REFERENCES",
             "section_summaries": "SECTION_SUMMARIES"
@@ -198,7 +191,7 @@ class Summarizer:
             if match:
                 content = match.group(1).strip()
                 if content.lower() in ["none", "not available", ""]:
-                    parsed_data[key] = [] if key in array_sections_keys else None
+                    parsed_data[key] = [] if key in array_sections_keys else ""
                 else:
                     if key in array_sections_keys:
                         lines = [
@@ -213,7 +206,7 @@ class Summarizer:
                     else:
                         parsed_data[key] = content
             else:
-                parsed_data[key] = [] if key in array_sections_keys else None
+                parsed_data[key] = [] if key in array_sections_keys else ""
                 print(f"Warning: Markers for section '{section_name}' not found in summary.")
 
         return parsed_data

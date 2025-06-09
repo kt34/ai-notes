@@ -46,7 +46,8 @@ interface SectionSummary {
   key_takeaways: string[];
   new_vocabulary: string[];
   study_questions: string[];
-  context_link: string;
+  examples: string[];
+  useful_references: string[];
 }
 
 interface SectionSummariesProps {
@@ -68,11 +69,14 @@ export function SectionSummaries({ sections }: SectionSummariesProps) {
     if (section.new_vocabulary?.length > 0) {
       content += `**New Vocabulary:**\n${section.new_vocabulary.join(', ')}\n\n`;
     }
+    if (section.examples?.length > 0) {
+      content += `**Examples:**\n${section.examples.map(e => `- ${e}`).join('\n')}\n\n`;
+    }
     if (section.study_questions?.length > 0) {
       content += `**Study Questions:**\n${section.study_questions.map(q => `- ${q}`).join('\n')}\n\n`;
     }
-    if (section.context_link) {
-      content += `**Context:**\n${section.context_link}`;
+    if (section.useful_references?.length > 0) {
+      content += `**Useful References:**\n${section.useful_references.map(r => `- ${r}`).join('\n')}\n\n`;
     }
     return content.trim();
   };
@@ -147,7 +151,7 @@ export function SectionSummaries({ sections }: SectionSummariesProps) {
               }}>
                 {index + 1}
               </span>
-              <h3 style={{ color: '#fff', margin: 0, fontSize: '1.1rem' }}>
+              <h3 style={{ color: 'rgba(255, 255, 255, 0.6)', margin: 0, fontSize: '1.05rem' }}>
                 {section.section_title || `Section ${index + 1}`}
               </h3>
             </div>
@@ -199,6 +203,16 @@ export function SectionSummaries({ sections }: SectionSummariesProps) {
                 </DetailSection>
               )}
 
+              {section.examples?.length > 0 && (
+                <DetailSection title="Examples" icon="🔬">
+                   <ul style={{ margin: '0.75rem 0 0 1.5rem', padding: 0, color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {section.examples.map((example, i) => (
+                      <li key={i}>{example}</li>
+                    ))}
+                  </ul>
+                </DetailSection>
+              )}
+
               {section.study_questions?.length > 0 && (
                 <DetailSection title="Study Questions" icon="❓">
                    <ul style={{ margin: '0.75rem 0 0 1.5rem', padding: 0, color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -208,14 +222,34 @@ export function SectionSummaries({ sections }: SectionSummariesProps) {
                   </ul>
                 </DetailSection>
               )}
-              
-              {section.context_link && (
-                 <DetailSection title="Context" icon="🔗">
-                    <p style={{ marginTop: '0.75rem', margin: 0, paddingLeft: '0.5rem', color: 'rgba(255, 255, 255, 0.7)', fontStyle: 'italic', borderLeft: '2px solid rgba(100, 108, 255, 0.3)' }}>
-                        {section.context_link}
-                    </p>
-                 </DetailSection>
+
+              {section.useful_references?.length > 0 && (
+                <DetailSection title="Suggested References" icon="🔗">
+                   {/* <ul style={{ margin: '0.75rem 0 0 0', padding: 0, listStyle: 'none', color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}> */}
+                   <ul style={{ margin: '0.75rem 0 0 1.5rem', padding: 0, color: 'rgba(255, 255, 255, 0.8)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {section.useful_references.map((ref, i) => (
+                      <li key={i}>
+                        <a
+                          href={ref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#8c8eff',
+                            textDecoration: 'none',
+                            fontSize: '0.9rem',
+                            wordBreak: 'break-all'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                        >
+                          {ref}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </DetailSection>
               )}
+              
             </div>
           )}
         </div>
