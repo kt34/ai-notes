@@ -43,7 +43,7 @@ class Summarizer:
             "- new_vocabulary: A list of 1-4 new important keywords or technical terms as STRINGS. If none, return an empty list.\n"
             "- study_questions: A list of 1-2 pointed questions as STRINGS that a student should be able to answer after this section. This promotes active recall.\n"
             "- examples: A list of 1-2 specific examples, analogies, real-world references, or illustrative scenarios mentioned in this section. These may include brief illustrative phrases. You must return at least 2 examples. If none, return an empty list.\n\n"
-            "- useful_references: You are an academic assistant helping students by providing useful, trustworthy reference links based on the lecture transcript below.\n\n🔗 Your task:\n- You must provide 2 real, working URLs** relevant to the lecture content.\n- These can include:  \n  • Sources directly mentioned in the transcript (if any)  \n  • Recommended readings: academic articles, videos, or educational web resources  \n\n🎯 Reference Guidelines:\n- Return up to **2 references** as a **JSON array of objects**\n- Each object must contain:  \n  • \"title\" - a short, clear name of the resource (string)  \n  • \"url\" - a real, working URL (string)\n- Example format:\n[\n  { \"title\": \"Modern Portfolio Theory (MPT)\", \"url\": \"https://www.investopedia.com/terms/m/modernportfoliotheory.asp\" },\n  { \"title\": \"Efficient Frontier Explained\", \"url\": \"https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/modern-portfolio-theory/v/efficient-frontier\" }\n]\n- DO NOT use markdown link syntax (e.g., `[title](url)`)\n- DO NOT include any commentary or formatting outside the JSON array\n- If no references are found, return an empty array: `[]`\n\n🎓 Preferred Sources (if applicable):\n- Academic domains like `.edu`, `.org`, `https://doi.org/`, or trusted sources like:  \n  Google Scholar, PubMed, Khan Academy, MIT OpenCourseWare, Stanford Encyclopedia of Philosophy, etc.\n\n📌 If no sources were mentioned in the transcript:\n- Still provide 2 highly relevant resources  \n- At least 1-2 should be high-quality academic or educational URLs based on the topic\n"
+            "- useful_references: You are an academic assistant helping students by providing useful, trustworthy reference links based on the lecture transcript below.\n\n🔗 Your task:\n- You MUST provide 2 real, working URLs** relevant to the lecture content.\n- These can include:  \n  • Sources directly mentioned in the transcript (if any)  \n  • Recommended readings: academic articles, videos, or educational web resources  \n\n🎯 Reference Guidelines:\n- Return up to **2 references** as a **JSON array of objects**\n- Each object must contain:  \n  • \"title\" - a short, clear name of the resource (string)  \n  • \"url\" - a real, working URL (string)\n- Example format:\n[\n  { \"title\": \"Modern Portfolio Theory (MPT)\", \"url\": \"https://www.investopedia.com/terms/m/modernportfoliotheory.asp\" },\n  { \"title\": \"Efficient Frontier Explained\", \"url\": \"https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/modern-portfolio-theory/v/efficient-frontier\" }\n]\n- DO NOT use markdown link syntax (e.g., `[title](url)`)\n- DO NOT include any commentary or formatting outside the JSON array\n- If no references are found, return an empty array: `[]`\n\n🎓 Preferred Sources (if applicable):\n- Academic domains like `.edu`, `.org`, `https://doi.org/`, or trusted sources like:  \n  Google Scholar, PubMed, Khan Academy, MIT OpenCourseWare, Stanford Encyclopedia of Philosophy, etc.\n\n📌 If no sources were mentioned in the transcript:\n- Still provide 2 highly relevant resources  \n- At least 1-2 should be high-quality academic or educational URLs based on the topic\n"
             "Respond ONLY with the JSON object. Do not include any other text or formatting.\n\n"
             "Here is the section text:\n\n"
             f"{section}"
@@ -105,6 +105,9 @@ class Summarizer:
             "@@CONCLUSION_TAKEAWAYS_START@@\n"
             "[Write a short, yet comprehensive paragraph summarizing the main conclusions or key takeaways from the entire lecture. This should synthesize the most important information for a final review. This section should be a paragraph, not bullet points.]\n"
             "@@CONCLUSION_TAKEAWAYS_END@@\n\n"
+            "@@STUDY_QUESTIONS_START@@\n"
+            "[List 5-10 high-level study questions that cover the main topics of the entire lecture. You must provide at least 5 questions. Each question should be a string. If none, state 'None'.]\n"
+            "@@STUDY_QUESTIONS_END@@\n\n"
             "@@OPTIONAL_REFERENCES_START@@\n"
             "[You are an academic assistant helping students by providing useful, trustworthy reference links based on the lecture transcript below.\n\n🔗 Your task:\n- Provide **at least 5 real, working URLs** relevant to the lecture content.\n- These can include:  \n  • Sources directly mentioned in the transcript (if any)  \n  • Recommended readings: academic articles, videos, or educational web resources  \n\n🎯 Reference Guidelines:\n- Return up to **10 references** as a **JSON array of objects**\n- Each object must contain:  \n  • \"title\" – a short, clear name of the resource (string)  \n  • \"url\" - a real, working URL (string)\n- Example format:\n[\n  { \"title\": \"Modern Portfolio Theory (MPT)\", \"url\": \"https://www.investopedia.com/terms/m/modernportfoliotheory.asp\" },\n  { \"title\": \"Efficient Frontier Explained\", \"url\": \"https://www.khanacademy.org/economics-finance-domain/core-finance/investment-vehicles-tutorial/modern-portfolio-theory/v/efficient-frontier\" }\n]\n- DO NOT use markdown link syntax (e.g., `[title](url)`)\n- DO NOT include any commentary or formatting outside the JSON array\n- If no references are found, return an empty array: `[]`\n\n🎓 Preferred Sources (if applicable):\n- Academic domains like `.edu`, `.org`, `https://doi.org/`, or trusted sources like:  \n  Google Scholar, PubMed, Khan Academy, MIT OpenCourseWare, Stanford Encyclopedia of Philosophy, etc.\n\n📌 If no sources were mentioned in the transcript:\n- Still provide 5 highly relevant resources  \n- At least 2-3 should be high-quality academic or educational URLs based on the topic\n]\n"
             "@@OPTIONAL_REFERENCES_END@@\n\n"
@@ -134,7 +137,8 @@ class Summarizer:
 
         array_sections_keys = [
             "key_concepts", 
-            "main_points_covered"
+            "main_points_covered",
+            "study_questions"
         ]
 
         sections = {
@@ -143,6 +147,7 @@ class Summarizer:
             "key_concepts": "KEY_CONCEPTS",
             "main_points_covered": "MAIN_POINTS",
             "conclusion_takeaways": "CONCLUSION_TAKEAWAYS",
+            "study_questions": "STUDY_QUESTIONS",
         }
         
         json_sections = {

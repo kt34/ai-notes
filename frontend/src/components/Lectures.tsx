@@ -18,6 +18,7 @@ interface Lecture {
   key_concepts: string[];
   main_points_covered: string[];
   conclusion_takeaways: string[];
+  study_questions: string[];
   references: Reference[];
   created_at: string;
   section_summaries: Array<{

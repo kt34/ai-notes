@@ -274,7 +274,8 @@ async def websocket_process_upload(ws: WebSocket):
             "main_points_covered": structured_summary_data.get("main_points_covered"),
             "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
             "references": structured_summary_data.get("references"),
-            "section_summaries": structured_summary_data.get("section_summaries", [])
+            "section_summaries": structured_summary_data.get("section_summaries", []),
+            "study_questions": structured_summary_data.get("study_questions", [])
         }
 
         db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()
@@ -467,7 +468,8 @@ async def websocket_transcribe(ws: WebSocket):
                     "main_points_covered": structured_summary_data.get("main_points_covered", []),
                     "conclusion_takeaways": structured_summary_data.get("conclusion_takeaways"),
                     "references": structured_summary_data.get("references", []),
-                    "section_summaries": structured_summary_data.get("section_summaries", [])
+                    "section_summaries": structured_summary_data.get("section_summaries", []),
+                    "study_questions": structured_summary_data.get("study_questions", [])
                 }
 
                 db_response = supabase.table("lectures").insert(lecture_data_to_insert).execute()

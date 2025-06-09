@@ -18,6 +18,7 @@ interface Lecture {
   key_concepts: string[];
   main_points_covered: string[];
   conclusion_takeaways: string[];
+  study_questions: string[];
   references: Reference[];
   created_at: string;
   section_summaries: Array<{
@@ -91,6 +92,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
+  const [isReferencesExpanded, setIsReferencesExpanded] = useState(false);
+  const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -442,48 +445,186 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           )}
 
           {lecture.references && lecture.references.length > 0 && (
-            <>
-              <SectionTitle>📚 Suggested References</SectionTitle>
-              <ul style={{ 
-                listStyle: 'none', 
-                padding: 0,
-                marginBottom: '2rem',
-                textAlign: 'left'
+            <div style={{
+              marginTop: '2rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                background: isReferencesExpanded ? 'rgba(255, 255, 255, 0.05)' : 'none',
+                transition: 'background 0.2s ease'
               }}>
-                {lecture.references.map((ref, index) => (
-                  <li key={index} style={{ marginBottom: '1rem' }}>
-                    <a 
-                      href={ref.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: '#a7a9ff',
-                        textDecoration: 'none',
-                        transition: 'color 0.2s ease',
-                        fontWeight: 500
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#c0c2ff';
-                        e.currentTarget.style.textDecoration = 'underline';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '#a7a9ff';
-                        e.currentTarget.style.textDecoration = 'none';
-                      }}
-                    >
-                      {ref.title}
-                    </a>
-                    <p style={{
-                      fontSize: '0.85rem',
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      margin: '0.25rem 0 0'
+                <button
+                  onClick={() => setIsReferencesExpanded(!isReferencesExpanded)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontSize: '1.2rem'
+                  }}
+                >
+                  <span>📚</span> Suggested References
+                  <span style={{
+                    transform: isReferencesExpanded ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.3s ease',
+                    marginLeft: '0.5rem'
+                  }}>
+                    ▼
+                  </span>
+                </button>
+              </div>
+              <div style={{
+                height: isReferencesExpanded ? 'auto' : '0',
+                opacity: isReferencesExpanded ? 1 : 0,
+                visibility: isReferencesExpanded ? 'visible' : 'hidden',
+                overflow: 'hidden',
+                transition: 'opacity 0.3s ease, visibility 0.3s ease',
+                background: 'rgba(255, 255, 255, 0.02)'
+              }}>
+                <ul style={{ 
+                  listStyle: 'none', 
+                  padding: '1.5rem',
+                  margin: 0,
+                  textAlign: 'left'
+                }}>
+                  {lecture.references.map((ref, index) => (
+                    <li key={index} style={{ marginBottom: '1rem' }}>
+                      <a 
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: '#a7a9ff',
+                          textDecoration: 'none',
+                          transition: 'color 0.2s ease',
+                          fontWeight: 500
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#c0c2ff';
+                          e.currentTarget.style.textDecoration = 'underline';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#a7a9ff';
+                          e.currentTarget.style.textDecoration = 'none';
+                        }}
+                      >
+                        {ref.title}
+                      </a>
+                      <p style={{
+                        fontSize: '0.85rem',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        margin: '0.25rem 0 0'
+                      }}>
+                        Source: {getDomain(ref.url)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {lecture.study_questions && lecture.study_questions.length > 0 && (
+            <div style={{
+              marginTop: '2rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                background: isQuestionsExpanded ? 'rgba(255, 255, 255, 0.05)' : 'none',
+                transition: 'background 0.2s ease'
+              }}>
+                <button
+                  onClick={() => setIsQuestionsExpanded(!isQuestionsExpanded)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontSize: '1.2rem'
+                  }}
+                >
+                  <span>📝</span> Study Questions
+                  <span style={{
+                    transform: isQuestionsExpanded ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.3s ease',
+                    marginLeft: '0.5rem'
+                  }}>
+                    ▼
+                  </span>
+                </button>
+              </div>
+              <div style={{
+                height: isQuestionsExpanded ? 'auto' : '0',
+                opacity: isQuestionsExpanded ? 1 : 0,
+                visibility: isQuestionsExpanded ? 'visible' : 'hidden',
+                overflow: 'hidden',
+                transition: 'opacity 0.3s ease, visibility 0.3s ease',
+                background: 'rgba(255, 255, 255, 0.02)'
+              }}>
+                <ul style={{ 
+                  listStyle: 'none', 
+                  padding: '1.5rem',
+                  margin: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}>
+                  {lecture.study_questions.map((question, index) => (
+                    <li key={index} style={{
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      borderRadius: '12px',
+                      padding: '1.25rem',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      lineHeight: '1.6',
+                      textAlign: 'left',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      display: 'flex',
+                      gap: '1rem',
+                      alignItems: 'flex-start',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                     }}>
-                      Source: {getDomain(ref.url)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </>
+                      <span style={{ 
+                        color: '#fff',
+                        minWidth: '24px',
+                        height: '24px',
+                        background: 'rgba(86, 88, 245, 0.25)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.9rem',
+                        fontWeight: '500'
+                      }}>
+                        {index + 1}
+                      </span>
+                      {question}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
 
           {/* Full Transcript (at the very bottom) */}
