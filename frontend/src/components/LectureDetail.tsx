@@ -87,6 +87,61 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
+// Add this component near the top of the file, after the existing interfaces
+function CopyAllButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      style={{
+        position: 'absolute',
+        right: 0,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        background: copied ? 'rgba(86, 88, 245, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+        border: `1px solid ${copied ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+        borderRadius: '6px',
+        padding: '0.5rem',
+        color: copied ? '#8c8eff' : 'rgba(255, 255, 255, 0.6)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease',
+        fontSize: '1.1rem',
+        width: '36px',
+        height: '36px'
+      }}
+      onMouseEnter={(e) => {
+        if (!copied) {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.color = '#fff';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!copied) {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+          e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+        }
+      }}
+      title={copied ? "Copied!" : "Copy all notes"}
+    >
+      {copied ? '✓' : '📋'}
+    </button>
+  );
+}
+
 export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +150,85 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const [isReferencesExpanded, setIsReferencesExpanded] = useState(false);
   const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false);
   const { token } = useAuth();
+
+  const formatLectureForCopy = (lecture: Lecture): string => {
+    let content = `${lecture.lecture_title}\n`;
+    content += '='.repeat(lecture.lecture_title.length) + '\n\n';
+
+    // Topic Summary
+    content += `${lecture.topic_summary_sentence}\n\n`;
+
+    // Key Concepts
+    content += '✨ Key Concepts\n';
+    content += '-------------\n';
+    content += lecture.key_concepts.map(concept => `• ${concept}`).join('\n') + '\n\n';
+
+    // Main Points
+    content += '📝 Main Points\n';
+    content += '------------\n';
+    content += lecture.main_points_covered.map(point => `- ${point}`).join('\n') + '\n\n';
+
+    // Section-by-Section Breakdown
+    content += '📑 Section-by-Section Breakdown\n';
+    content += '--------------------------\n';
+    lecture.section_summaries.forEach((section, index) => {
+      content += `${index + 1}. ${section.section_title}\n`;
+      
+      if (section.key_takeaways?.length) {
+        content += '\n   Key Takeaways:\n';
+        content += section.key_takeaways.map(point => `   • ${point}`).join('\n');
+        content += '\n';
+      }
+
+      if (section.new_vocabulary?.length) {
+        content += '\n   New Vocabulary:\n';
+        content += section.new_vocabulary.map(term => `   • ${term}`).join('\n');
+        content += '\n';
+      }
+
+      if (section.examples?.length) {
+        content += '\n   Examples:\n';
+        content += section.examples.map(example => `   • ${example}`).join('\n');
+        content += '\n';
+      }
+
+      if (section.study_questions?.length) {
+        content += '\n   Study Questions:\n';
+        content += section.study_questions.map(q => `   • ${q}`).join('\n');
+        content += '\n';
+      }
+
+      if (section.useful_references?.length) {
+        content += '\n   Useful References:\n';
+        content += section.useful_references.map(ref => `   • ${ref.title} (${ref.url})`).join('\n');
+        content += '\n';
+      }
+      content += '\n';
+    });
+
+    // Conclusion
+    if (lecture.conclusion_takeaways) {
+      content += '🎯 Conclusion\n';
+      content += '-----------\n';
+      content += lecture.conclusion_takeaways + '\n\n';
+    }
+
+    // References
+    if (lecture.references?.length) {
+      content += '📚 Suggested References\n';
+      content += '-------------------\n';
+      content += lecture.references.map(ref => `• ${ref.title}\n  Source: ${ref.url}`).join('\n\n') + '\n\n';
+    }
+
+    // Study Questions
+    if (lecture.study_questions?.length) {
+      content += '📝 Study Questions\n';
+      content += '---------------\n';
+      content += lecture.study_questions.map((q, i) => `${i + 1}. ${q}`).join('\n\n') + '\n\n';
+    }
+
+    return content;
+  };
 
   useEffect(() => {
     const fetchLecture = async () => {
@@ -299,25 +433,41 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
           border: '1px solid rgba(255, 255, 255, 0.1)',
           backdropFilter: 'blur(8px)'
         }}>
-          <div style={{ marginBottom: '2rem' }}>
-            <h1 style={{ 
-              color: '#fff',
-              marginTop: 0,
-              marginBottom: '1rem',
-              fontSize: '2rem',
-              background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
+          <div style={{ 
+            marginBottom: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
+            <div style={{ 
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              position: 'relative'
             }}>
-              {lecture.lecture_title}
-            </h1>
+              <h1 style={{ 
+                color: '#fff',
+                margin: 0,
+                fontSize: '2rem',
+                background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textAlign: 'center',
+                maxWidth: '80%'
+              }}>
+                {lecture.lecture_title}
+              </h1>
+              
+              <CopyAllButton text={formatLectureForCopy(lecture)} />
+            </div>
             
             <div style={{ 
               display: 'flex',
               gap: '1rem',
               color: 'rgba(255, 255, 255, 0.6)',
               fontSize: '0.9rem',
-              marginBottom: '1.5rem'
+              marginBottom: '1rem'
             }}>
               <span>{formatDate(lecture.created_at)}</span>
               <span>•</span>
@@ -333,7 +483,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               background: 'rgba(86, 88, 245, 0.1)',
               borderRadius: '8px',
               border: '1px solid rgba(86, 88, 245, 0.2)',
-              textAlign: 'left'
+              textAlign: 'left',
+              width: '100%'
             }}>
               {lecture.topic_summary_sentence}
             </p>
