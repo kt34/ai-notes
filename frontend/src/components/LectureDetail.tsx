@@ -449,20 +449,30 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
                   <button
                     onClick={() => setShowFlashcardsModal(true)}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '6px',
-                      padding: '0.25rem 0.6rem',
-                      color: 'rgba(255, 255, 255, 0.6)',
+                      background: 'rgba(86, 88, 245, 0.1)',
+                      border: '1px solid rgba(86, 88, 245, 0.2)',
+                      borderRadius: '8px',
+                      padding: '0.5rem 1rem',
+                      color: '#8c8eff',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
+                      gap: '0.5rem',
                       transition: 'all 0.2s ease',
                       fontSize: '0.9rem',
+                      fontWeight: 500,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(86, 88, 245, 0.15)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(86, 88, 245, 0.1)';
+                      e.currentTarget.style.transform = 'none';
                     }}
                   >
-                    View Flashcards
+                    <span style={{ fontSize: '1.1rem' }}>🃏</span>
+                    Study Flashcards ({lecture.flashcards.length})
                   </button>
                 </>
               )}
