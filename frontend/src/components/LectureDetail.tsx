@@ -87,7 +87,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
-// Add this component near the top of the file, after the existing interfaces
+// Update the CopyAllButton styles
 function CopyAllButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -105,23 +105,19 @@ function CopyAllButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       style={{
-        position: 'absolute',
-        right: 0,
-        top: '50%',
-        transform: 'translateY(-50%)',
         background: copied ? 'rgba(86, 88, 245, 0.15)' : 'rgba(255, 255, 255, 0.05)',
         border: `1px solid ${copied ? 'rgba(86, 88, 245, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
         borderRadius: '6px',
-        padding: '0.5rem',
+        padding: '0.25rem 0.5rem',
         color: copied ? '#8c8eff' : 'rgba(255, 255, 255, 0.6)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         transition: 'all 0.2s ease',
-        fontSize: '1.1rem',
-        width: '36px',
-        height: '36px'
+        fontSize: '0.9rem',
+        height: '24px',
+        width: '24px'
       }}
       onMouseEnter={(e) => {
         if (!copied) {
@@ -440,30 +436,22 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
             alignItems: 'center',
             gap: '1rem'
           }}>
-            <div style={{ 
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              position: 'relative'
+            <h1 style={{ 
+              color: '#fff',
+              margin: 0,
+              fontSize: '2rem',
+              background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textAlign: 'center',
+              maxWidth: '80%'
             }}>
-              <h1 style={{ 
-                color: '#fff',
-                margin: 0,
-                fontSize: '2rem',
-                background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textAlign: 'center',
-                maxWidth: '80%'
-              }}>
-                {lecture.lecture_title}
-              </h1>
-              
-              <CopyAllButton text={formatLectureForCopy(lecture)} />
-            </div>
+              {lecture.lecture_title}
+            </h1>
             
             <div style={{ 
               display: 'flex',
+              alignItems: 'center',
               gap: '1rem',
               color: 'rgba(255, 255, 255, 0.6)',
               fontSize: '0.9rem',
@@ -472,6 +460,8 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
               <span>{formatDate(lecture.created_at)}</span>
               <span>•</span>
               <span>{calculateReadingTime(lecture.transcript)}</span>
+              <span>•</span>
+              <CopyAllButton text={formatLectureForCopy(lecture)} />
             </div>
 
             <p style={{ 
