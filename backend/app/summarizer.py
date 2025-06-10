@@ -91,7 +91,7 @@ class Summarizer:
             "Your task is to extract the key information and produce structured notes.\n\n"
             "Please organize the notes using the following EXACT section markers and instructions:\n\n"
             "@@LECTURE_TITLE_START@@\n"
-            "[Infer an appropriate and concise lecture title. Always provide a title, even if it's a general topic derived from the content.]\n"
+            "[Based on the *entire lecture transcript* provided, infer a clear and concise title that accurately captures the main theme or subject. Do not base the title on individual sections alone.]\n"
             "@@LECTURE_TITLE_END@@\n\n"
             "@@TOPIC_SUMMARY_START@@\n"
             "[Provide a brief, single-sentence summary that encapsulates the main theme of the lecture.]\n"
