@@ -56,10 +56,41 @@ async def logout():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/auth/me", response_model=SupabaseUser) # Assuming SupabaseUser is the model for the user object
+class UserProfileResponse(BaseModel):
+    id: str
+    email: str
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    subscription_status: Optional[str] = None
+    
+
+@app.get("/auth/me", response_model=UserProfileResponse) # Assuming SupabaseUser is the model for the user object
 async def read_users_me(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
-    # current_user is now the authenticated Supabase user object
-    return current_user
+    # current_user.id is the authenticated user's ID.
+    # Now, fetch their profile from your 'profiles' table.
+    try:
+        profile_response = supabase.table("profiles").select("*").eq("id", current_user.id).single().execute()
+        
+        profile_data = profile_response.data
+        
+        # Combine auth info with profile info for the final response
+        return UserProfileResponse(
+            id=current_user.id,
+            email=current_user.email,
+            full_name=profile_data.get('full_name'),
+            avatar_url=profile_data.get('avatar_url'),
+            subscription_status=profile_data.get('subscription_status')
+            # map other fields here...
+        )
+    except Exception as e:
+        # This can happen if the trigger failed or for a user created before the trigger existed.
+        # We can fall back to the auth metadata.
+        print(f"Could not find profile for user {current_user.id}, falling back to metadata. Error: {e}")
+        return UserProfileResponse(
+            id=current_user.id,
+            email=current_user.email,
+            full_name=current_user.user_metadata.get('full_name') if current_user.user_metadata else None
+        )
 
 @app.get("/lectures")
 async def get_lectures(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):

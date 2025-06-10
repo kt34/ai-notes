@@ -7,6 +7,8 @@ interface User {
   id: string;
   email: string;
   full_name?: string;
+  avatar_url?: string;
+  subscription_status?: string;
 }
 
 interface AuthContextType {
@@ -84,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {
         id: userData.id,
         email: userData.email,
-        full_name: userData.user_metadata?.full_name || null
+        full_name: userData.full_name || null
       };
     } catch (err) {
       if (err instanceof TokenExpiredError) {
