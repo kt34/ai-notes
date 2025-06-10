@@ -53,9 +53,8 @@ class SupabaseUser(BaseModel):
 async def register_user(user_data: UserCreate) -> AuthResponse:
     """Register a new user with Supabase Auth."""
     print(f"Registering user: {user_data.email}")
-    print(f"{settings.FRONTEND_URL}")
     try:
-        # Sign up the user with a custom email template
+        # Sign up the user
         user_response = supabase.auth.sign_up({
             "email": user_data.email,
             "password": user_data.password,
@@ -63,13 +62,25 @@ async def register_user(user_data: UserCreate) -> AuthResponse:
                 "data": {
                     "full_name": user_data.full_name
                 },
-                "email_redirect_to": f"{settings.FRONTEND_URL}/verify-email",
-                "email_template": "custom-email-template"
+                "email_redirect_to": f"{settings.FRONTEND_URL}/verify-email"
             }
         })
         
+        # This is the key part: check if the user object was created
+        # but the identities array is empty. This is Supabase's way of
+        # indicating that the user already exists.
+        if user_response.user and not user_response.user.identities:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email address already exists."
+            )
+
         if not user_response.user:
-            raise Exception("Failed to create user")
+            # This would be an unexpected error from Supabase
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user for an unknown reason."
+            )
 
         message_to_user = "Registration successful. Please check your email to confirm your account."
 
@@ -79,31 +90,24 @@ async def register_user(user_data: UserCreate) -> AuthResponse:
             email=user_response.user.email
         )
 
+    except HTTPException as e:
+        # Re-raise the specific HTTP exceptions we've thrown
+        raise e
     except Exception as e:
-        # Try to provide a more specific error message if possible
+        # Handle other potential errors, like weak passwords from GoTrueApiError
         error_message = str(e)
-        if hasattr(e, 'message') and e.message: # For GoTrueApiError (common from supabase-py)
-             error_message = e.message
-        elif hasattr(e, 'json') and callable(e.json): # For some HTTP errors from httpx
-            try:
-                error_detail = e.json()
-                # Common error keys from Supabase/GoTrue errors
-                if 'error_description' in error_detail:
-                    error_message = error_detail['error_description']
-                elif 'msg' in error_detail: # Sometimes 'msg' is used
-                     error_message = error_detail['msg']
-                elif 'message' in error_detail: # General 'message' key
-                    error_message = error_detail['message']
-            except:
-                pass # Fallback to str(e) if parsing json fails
+        if "Password should be at least 6 characters" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Password must be at least 6 characters long."
+            )
         
-        # Common Supabase specific error messages you might want to relay more clearly:
-        if "User already registered" in error_message:
-            error_message = "This email address is already registered."
-        elif "Password should be at least 6 characters" in error_message:
-            error_message = "Password should be at least 6 characters long."
-        
-        raise Exception(f"Registration failed: {error_message}")
+        # Generic fallback for other errors
+        print(f"An unexpected error occurred during registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {error_message}"
+        )
 
 async def verify_email(verify_data: VerifyEmailRequest):
     """Verify email with token."""

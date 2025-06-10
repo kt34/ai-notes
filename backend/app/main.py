@@ -39,8 +39,16 @@ summarizer = Summarizer(settings.OPENAI_API_KEY)
 async def register(user_data: UserCreate):
     try:
         return await register_user(user_data)
+    except HTTPException as e:
+        # Re-raise the HTTPException that was already created in register_user
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # This will now only catch truly unexpected errors
+        print(f"Unexpected error in /auth/register endpoint: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="An unexpected server error occurred during registration."
+        )
 
 @app.post("/auth/login")
 async def login(user_data: UserLogin):
