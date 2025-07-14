@@ -13,6 +13,7 @@ from .auth import (
     VerifyEmailRequest, AuthResponse, ResendVerificationRequest, 
     resend_verification_email, forgot_password, ForgotPasswordRequest
 )
+from .user_usages import get_usage, update_usage
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
@@ -99,6 +100,26 @@ async def read_users_me(current_user: SupabaseUser = Depends(get_authenticated_u
             email=current_user.email,
             full_name=current_user.user_metadata.get('full_name') if current_user.user_metadata else None
         )
+
+@app.get("/usage/get")
+async def get_usage_route(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    try:
+        return await get_usage(current_user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class UpdateUsageRequest(BaseModel):
+    updated_plan: str
+
+@app.put("/usage/update")
+async def update_usage_route(
+    request: UpdateUsageRequest,
+    current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
+):
+    try:
+        return await update_usage(current_user.id, request.updated_plan)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/lectures")
 async def get_lectures(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
