@@ -1,15 +1,62 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { apiRequest } from '../utils/api';
+
+interface SubscriptionData {
+  subscription_status: string;
+}
 
 export function NavBar() {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch subscription data
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!token) return;
+      try {
+        const data = await apiRequest('/usage/plan', { token });
+        setSubscriptionData(data);
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      }
+    };
+
+    fetchSubscription();
+  }, [token]);
+
+  // Helper functions for plan-specific styling
+  const getPlanColors = (status: string) => {
+    // Keep original blue gradient for all plans
+    return {
+      gradient: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+      shadow: '0 2px 8px rgba(86, 88, 245, 0.3)'
+    };
+  };
+
+  const getPlanSymbol = (status: string) => {
+    switch (status) {
+      case 'standard':
+        return '⭐';
+      case 'pro':
+        return '💎';
+      case 'max':
+        return '👑';
+      default:
+        return ''; // No emoji for free plan
+    }
+  };
+
+  const currentPlan = subscriptionData?.subscription_status || 'free';
+  const planColors = getPlanColors(currentPlan);
+  const planSymbol = getPlanSymbol(currentPlan);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -86,7 +133,7 @@ export function NavBar() {
               width: '32px',
               height: '32px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+              background: planColors.gradient,
               border: 'none',
               color: 'white',
               fontSize: '14px',
@@ -97,11 +144,29 @@ export function NavBar() {
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(86, 88, 245, 0.3)',
-              padding: 0
+              boxShadow: planColors.shadow,
+              padding: 0,
+              position: 'relative'
             }}
           >
             {user?.full_name ? user.full_name[0].toUpperCase() : user?.email[0].toUpperCase()}
+            {planSymbol && (
+              <span style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                fontSize: '10px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                borderRadius: '50%',
+                width: '14px',
+                height: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {planSymbol}
+              </span>
+            )}
           </button>
           
           {isDropdownOpen && (
@@ -133,17 +198,35 @@ export function NavBar() {
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+                  background: planColors.gradient,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
                   fontSize: '20px',
                   fontWeight: '600',
-                  boxShadow: '0 2px 8px rgba(86, 88, 245, 0.3)',
-                  padding: 0
+                  boxShadow: planColors.shadow,
+                  padding: 0,
+                  position: 'relative'
                 }}>
                   {user?.full_name ? user.full_name[0].toUpperCase() : user?.email[0].toUpperCase()}
+                  {planSymbol && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-4px',
+                      right: '-4px',
+                      fontSize: '14px',
+                      background: 'rgba(0, 0, 0, 0.7)',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {planSymbol}
+                    </span>
+                  )}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ 
@@ -166,6 +249,16 @@ export function NavBar() {
                     maxWidth: '160px'
                   }}>
                     {user?.email}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.75rem', 
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    marginTop: '0.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}>
+                    {planSymbol} {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan
                   </div>
                 </div>
               </div>

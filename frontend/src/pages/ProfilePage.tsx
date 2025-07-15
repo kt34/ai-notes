@@ -99,10 +99,36 @@ export function ProfilePage() {
     }
   };
 
+  // Helper functions for plan-specific styling
+  const getPlanColors = (status: string) => {
+    // Keep original blue gradient for all plans
+    return {
+      gradient: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+      shadow: '0 4px 12px rgba(86, 88, 245, 0.3)'
+    };
+  };
+
+  const getPlanSymbol = (status: string) => {
+    switch (status) {
+      case 'standard':
+        return '⭐';
+      case 'pro':
+        return '💎';
+      case 'max':
+        return '👑';
+      default:
+        return ''; // No emoji for free plan
+    }
+  };
+
   const currentSubscription = {
     planName: subscriptionData ? formatSubscriptionStatus(subscriptionData.subscription_status) : 'Free Plan',
     status: 'Active'
   };
+
+  const currentPlan = subscriptionData?.subscription_status || 'free';
+  const planColors = getPlanColors(currentPlan);
+  const planSymbol = getPlanSymbol(currentPlan);
 
   return (
     <div style={{ maxWidth: '800px', margin: '0rem auto 0', padding: '2rem' }}>
@@ -127,16 +153,34 @@ export function ProfilePage() {
             width: '80px',
             height: '80px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+            background: planColors.gradient,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '2rem',
             color: 'white',
             fontWeight: 'bold',
-            boxShadow: '0 4px 12px rgba(86, 88, 245, 0.3)'
+            boxShadow: planColors.shadow,
+            position: 'relative'
           }}>
             {user?.full_name ? user.full_name[0].toUpperCase() : user?.email ? user.email[0].toUpperCase() : 'U'}
+            {planSymbol && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                fontSize: '16px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                borderRadius: '50%',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {planSymbol}
+              </span>
+            )}
           </div>
           <div>
             <h1 style={{ 
@@ -325,7 +369,9 @@ export function ProfilePage() {
                   {isLoadingSubscription ? (
                     <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Loading...</span>
                   ) : (
-                    currentSubscription.planName
+                    <>
+                      {planSymbol} {currentSubscription.planName}
+                    </>
                   )}
                 </strong>
               </p>
