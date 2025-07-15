@@ -33,7 +33,7 @@ export function NavBar() {
   }, [token]);
 
   // Helper functions for plan-specific styling
-  const getPlanColors = (status: string) => {
+  const getPlanColors = () => {
     // Keep original blue gradient for all plans
     return {
       gradient: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
@@ -55,7 +55,7 @@ export function NavBar() {
   };
 
   const currentPlan = subscriptionData?.subscription_status || 'free';
-  const planColors = getPlanColors(currentPlan);
+  const planColors = getPlanColors();
   const planSymbol = getPlanSymbol(currentPlan);
 
   // Close dropdown when clicking outside
@@ -229,16 +229,28 @@ export function NavBar() {
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ 
-                    fontWeight: '600', 
-                    color: '#fff', 
-                    marginBottom: '0.25rem', 
-                    fontSize: '1rem',
-                    background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
-                  }}>
-                    {user?.full_name || 'User'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <span style={{
+                      fontWeight: 600,
+                      color: '#fff',
+                      fontSize: '1rem',
+                      background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
+                    }}>
+                      {user?.full_name || 'User'}
+                    </span>
+                    <span style={{
+                      padding: '0.15rem 0.7rem',
+                      borderRadius: '999px',
+                      background: 'rgba(86, 88, 245, 0.10)',
+                      color: '#5658f5',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      letterSpacing: '0.02em'
+                    }}>
+                      {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
+                    </span>
                   </div>
                   <div style={{ 
                     fontSize: '0.85rem', 
@@ -249,16 +261,6 @@ export function NavBar() {
                     maxWidth: '160px'
                   }}>
                     {user?.email}
-                  </div>
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    marginTop: '0.25rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    {planSymbol} {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan
                   </div>
                 </div>
               </div>

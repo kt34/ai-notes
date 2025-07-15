@@ -100,7 +100,7 @@ export function ProfilePage() {
   };
 
   // Helper functions for plan-specific styling
-  const getPlanColors = (status: string) => {
+  const getPlanColors = () => {
     // Keep original blue gradient for all plans
     return {
       gradient: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
@@ -127,7 +127,7 @@ export function ProfilePage() {
   };
 
   const currentPlan = subscriptionData?.subscription_status || 'free';
-  const planColors = getPlanColors(currentPlan);
+  const planColors = getPlanColors();
   const planSymbol = getPlanSymbol(currentPlan);
 
   return (
