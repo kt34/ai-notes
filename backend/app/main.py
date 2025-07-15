@@ -13,7 +13,7 @@ from .auth import (
     VerifyEmailRequest, AuthResponse, ResendVerificationRequest, 
     resend_verification_email, forgot_password, ForgotPasswordRequest
 )
-from .user_usages import get_usage, update_usage
+from .user_usages import get_usage, update_usage_plan, update_usage_uploads, update_usage_recordings
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
@@ -101,7 +101,7 @@ async def read_users_me(current_user: SupabaseUser = Depends(get_authenticated_u
             full_name=current_user.user_metadata.get('full_name') if current_user.user_metadata else None
         )
 
-@app.get("/usage/get")
+@app.get("/usage/plan")
 async def get_usage_route(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
     try:
         return await get_usage(current_user.id)
@@ -111,13 +111,13 @@ async def get_usage_route(current_user: SupabaseUser = Depends(get_authenticated
 class UpdateUsageRequest(BaseModel):
     updated_plan: str
 
-@app.put("/usage/update")
+@app.put("/usage/update_plan")
 async def update_usage_route(
     request: UpdateUsageRequest,
     current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
 ):
     try:
-        return await update_usage(current_user.id, request.updated_plan)
+        return await update_usage_plan(current_user.id, request.updated_plan)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -353,6 +353,9 @@ async def websocket_process_upload(ws: WebSocket):
             "lecture_id": lecture_id
         }))
 
+        print("Now trying to update the usage uploads for " + user_id)
+        await update_usage_uploads(user_id)
+
     except Exception as e:
         print(f"Error in websocket_process_upload: {str(e)}")
         error_message = str(e)
@@ -560,6 +563,9 @@ async def websocket_transcribe(ws: WebSocket):
                         "progress": 100
                     }))
                     print("Summary and final transcript sent successfully.")
+
+                    print("Now trying to increment the usage recordings for " + user_id)
+                    await update_usage_recordings(user_id)
                 except Exception as e:
                     print(f"Failed to send summary/final transcript: {str(e)}")
             else:

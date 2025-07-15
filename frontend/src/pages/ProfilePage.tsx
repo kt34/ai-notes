@@ -9,6 +9,10 @@ interface UserStats {
   total_words: number;
 }
 
+interface SubscriptionData {
+  subscription_status: string;
+}
+
 export function ProfilePage() {
   const { user, logout, token } = useAuth();
   const navigate = useNavigate();
@@ -16,8 +20,23 @@ export function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
 
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
+
+  const fetchSubscription = async () => {
+    try {
+      const data = await apiRequest('/usage/plan', {
+        token
+      });
+      setSubscriptionData(data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    } finally {
+      setIsLoadingSubscription(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -34,6 +53,7 @@ export function ProfilePage() {
     };
 
     fetchStats();
+    fetchSubscription();
   }, [token]);
 
   useEffect(() => {
@@ -42,6 +62,8 @@ export function ProfilePage() {
 
     if (paymentStatus === 'success') {
       setPaymentStatusMessage('🎉 Payment successful! Your subscription has been activated.');
+      // Refresh subscription data after successful payment
+      fetchSubscription();
       navigate(location.pathname, { replace: true });
     } else if (paymentStatus === 'cancelled') {
       setPaymentStatusMessage('Payment cancelled. Your subscription was not activated. You can try again anytime from the pricing page.');
@@ -61,8 +83,24 @@ export function ProfilePage() {
     }
   };
 
+  // Helper function to format subscription status
+  const formatSubscriptionStatus = (status: string) => {
+    switch (status) {
+      case 'free':
+        return 'Free Plan';
+      case 'standard':
+        return 'Standard Plan';
+      case 'pro':
+        return 'Pro Plan';
+      case 'max':
+        return 'Max Plan';
+      default:
+        return 'Free Plan';
+    }
+  };
+
   const currentSubscription = {
-    planName: 'Free Plan',
+    planName: subscriptionData ? formatSubscriptionStatus(subscriptionData.subscription_status) : 'Free Plan',
     status: 'Active'
   };
 
@@ -282,8 +320,18 @@ export function ProfilePage() {
             alignItems: 'center'
           }}>
             <div>
-              <p style={{ color: 'rgba(255, 255, 255, 0.8)', margin: '0 0 0.25rem 0' }}>Current Plan: <strong>{currentSubscription.planName}</strong></p>
-              <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>Status: {currentSubscription.status}</p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.8)', margin: '0 0 0.25rem 0' }}>
+                Current Plan: <strong>
+                  {isLoadingSubscription ? (
+                    <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Loading...</span>
+                  ) : (
+                    currentSubscription.planName
+                  )}
+                </strong>
+              </p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>
+                Status: {currentSubscription.status}
+              </p>
             </div>
             <button
               onClick={() => navigate('/pricing')}
