@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { config } from '../config';
+import { useUsage } from '../hooks/useUsage';
 
 export interface RecordingAppProps {}
 
@@ -16,6 +17,7 @@ export function RecordingApp({}: RecordingAppProps) {
   const [processingProgress, setProcessingProgress] = useState(0);
   const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
+  const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -361,19 +363,48 @@ export function RecordingApp({}: RecordingAppProps) {
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      paddingBottom: '20px'
+      paddingBottom: '20px',
+      position: 'relative'
     }}>
+
       <div style={{
         textAlign: 'center',
         marginBottom: '25px',
         padding: '0rem 1.5rem'
       }}>
-        <h1 style={{ 
-          fontSize: 'clamp(2rem, 4vw, 2.5rem)',
-          color: '#fff',
-          marginBottom: '10px', 
-          fontWeight: '700'
-        }}>Record Live</h1>
+        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+          <h1 style={{ 
+            textAlign: 'center',
+            margin: 0,
+            padding: '0.5rem 0',
+            fontSize: 'clamp(2rem, 4vw, 2.5rem)',
+            color: '#fff',
+            fontWeight: '700'
+          }}>
+            Record Live
+          </h1>
+          {!isLoadingUsage && usageData && (
+            <span style={{
+              position: 'absolute',
+              top: '50%',
+              right: 0,
+              transform: 'translateY(-50%)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '0.25rem 0.5rem',
+              fontSize: '0.8rem',
+              fontWeight: '500',
+              color: 'rgba(255, 255, 255, 0.7)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}>
+              <span>🎤 </span>
+              <span> {usageData.remaining_recordings} remaining</span>
+            </span>
+          )}
+        </div>
         <p style={{ 
           fontSize: 'clamp(1rem, 1.5vw, 1.1rem)', 
           color: 'rgba(255, 255, 255, 0.6)', 

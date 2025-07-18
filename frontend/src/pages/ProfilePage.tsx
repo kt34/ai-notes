@@ -2,12 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
-
-interface UserStats {
-  total_lectures: number;
-  total_minutes: number;
-  total_words: number;
-}
+import { useUsage } from '../hooks/useUsage';
 
 interface SubscriptionData {
   subscription_status: string;
@@ -18,10 +13,9 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
 
@@ -37,24 +31,6 @@ export function ProfilePage() {
       setIsLoadingSubscription(false);
     }
   };
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await apiRequest('/user/stats', {
-          token
-        });
-        setStats(data);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      } finally {
-        setIsLoadingStats(false);
-      }
-    };
-
-    fetchStats();
-    fetchSubscription();
-  }, [token]);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -249,104 +225,99 @@ export function ProfilePage() {
           </div>
         </div>
 
-        <div>
-          <h2 style={{ 
-            color: '#fff',
-            fontSize: '1.4rem',
-            marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span>📊</span> Statistics
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1rem'
-          }}>
+        {/* Usage Statistics */}
+        {!isLoadingUsage && usageData && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ 
+              color: '#fff',
+              fontSize: '1.4rem',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span>📈</span> Usage Remaining
+            </h2>
             <div style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              position: 'relative',
-              overflow: 'hidden'
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1rem'
             }}>
               <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
-                opacity: 0.5
-              }} />
-              <h3 style={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontSize: '0.9rem',
-                margin: '0 0 0.5rem 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
+                background: 'rgba(255, 255, 255, 0.02)',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                position: 'relative',
+                overflow: 'hidden'
               }}>
-                <span>📝</span> Total Lectures
-              </h3>
-              <p style={{
-                color: '#fff',
-                fontSize: '2rem',
-                margin: '0',
-                fontWeight: '600'
-              }}>
-                {isLoadingStats ? (
-                  <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>...</span>
-                ) : (
-                  stats?.total_lectures || 0
-                )}
-              </p>
-            </div>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
+                  opacity: 0.8
+                }} />
+                <h3 style={{ 
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontSize: '0.9rem',
+                  margin: '0 0 0.5rem 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span>📄</span> Uploads Remaining
+                </h3>
+                <p style={{
+                  color: '#fff',
+                  fontSize: '2rem',
+                  margin: '0',
+                  fontWeight: '600'
+                }}>
+                  {usageData.remaining_uploads}
+                </p>
+              </div>
               <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
-                opacity: 0.5
-              }} />
-              <h3 style={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontSize: '0.9rem',
-                margin: '0 0 0.5rem 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
+                background: 'rgba(255, 255, 255, 0.02)',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                position: 'relative',
+                overflow: 'hidden'
               }}>
-                <span>⏱️</span> Total Minutes
-              </h3>
-              <p style={{
-                color: '#fff',
-                fontSize: '2rem',
-                margin: '0',
-                fontWeight: '600'
-              }}>
-                {isLoadingStats ? (
-                  <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>...</span>
-                ) : (
-                  stats?.total_minutes || 0
-                )}
-              </p>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
+                  opacity: 0.8
+                }} />
+                <h3 style={{ 
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontSize: '0.9rem',
+                  margin: '0 0 0.5rem 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span>🎤</span> Recordings Remaining
+                </h3>
+                <p style={{
+                  color: '#fff',
+                  fontSize: '2rem',
+                  margin: '0',
+                  fontWeight: '600'
+                }}>
+                  {usageData.remaining_recordings}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ color: '#fff', fontSize: '1.4rem', marginBottom: '1rem' }}>

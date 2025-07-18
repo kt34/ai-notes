@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { config } from '../config';
+import { useUsage } from '../hooks/useUsage';
 
 export function UploadComponent() {
   const [activeTab, setActiveTab] = useState('file'); // Changed default to 'file'
@@ -17,6 +18,7 @@ export function UploadComponent() {
   const navigate = useNavigate();
   const socketRef = React.useRef<WebSocket | null>(null);
   const dragCounter = React.useRef(0);
+  const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   // Cleanup WebSocket on component unmount
   useEffect(() => {
@@ -167,13 +169,39 @@ export function UploadComponent() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto 1.5rem', padding: '0rem 1.5rem 1.5rem 1.5rem', color: '#fff' }}>
-      <h1 style={{ 
-        textAlign: 'center', 
-        marginBottom: '1rem',
-        fontSize: '2.5rem',
-        fontWeight: '700',
-        color: '#fff'
-      }}>Generate Notes</h1>
+      <div style={{ position: 'relative', marginBottom: '1rem' }}>
+        <h1 style={{ 
+          textAlign: 'center', 
+          margin: 0,
+          padding: '0.5rem 0', // To ensure vertical alignment with indicator
+          fontSize: '2.5rem',
+          fontWeight: '700',
+          color: '#fff'
+        }}>
+          Generate Notes
+        </h1>
+        {!isLoadingUsage && usageData && (
+          <span style={{
+            position: 'absolute',
+            top: '50%',
+            right: 0,
+            transform: 'translateY(-50%)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '0.25rem 0.5rem',
+            fontSize: '0.8rem',
+            fontWeight: '500',
+            color: 'rgba(255, 255, 255, 0.7)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem'
+          }}>
+            <span>📄</span>
+            <span>{usageData.remaining_uploads} remaining</span>
+          </span>
+        )}
+      </div>
       <p style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '2rem' }}>
         Upload a document or paste text to automatically generate structured notes and summaries.
       </p>
