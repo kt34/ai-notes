@@ -1,36 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { apiRequest } from '../utils/api';
 import { useUsage } from '../hooks/useUsage';
 
-interface SubscriptionData {
-  subscription_status: string;
-}
-
 export function ProfilePage() {
-  const { user, logout, token } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
   const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
-
-  const fetchSubscription = async () => {
-    try {
-      const data = await apiRequest('/usage/plan', {
-        token
-      });
-      setSubscriptionData(data);
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-    } finally {
-      setIsLoadingSubscription(false);
-    }
-  };
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -38,14 +18,14 @@ export function ProfilePage() {
 
     if (paymentStatus === 'success') {
       setPaymentStatusMessage('🎉 Payment successful! Your subscription has been activated.');
-      // Refresh subscription data after successful payment
-      fetchSubscription();
+      // Refresh user data to get the new subscription status
+      refreshUser();
       navigate(location.pathname, { replace: true });
     } else if (paymentStatus === 'cancelled') {
       setPaymentStatusMessage('Payment cancelled. Your subscription was not activated. You can try again anytime from the pricing page.');
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate]);
+  }, [location, navigate, refreshUser]);
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -60,7 +40,8 @@ export function ProfilePage() {
   };
 
   // Helper function to format subscription status
-  const formatSubscriptionStatus = (status: string) => {
+  const formatSubscriptionStatus = (status: string | null | undefined) => {
+    if (!status) return 'Free Plan';
     switch (status) {
       case 'free':
         return 'Free Plan';
@@ -97,12 +78,7 @@ export function ProfilePage() {
     }
   };
 
-  const currentSubscription = {
-    planName: subscriptionData ? formatSubscriptionStatus(subscriptionData.subscription_status) : 'Free Plan',
-    status: 'Active'
-  };
-
-  const currentPlan = subscriptionData?.subscription_status || 'free';
+  const currentPlan = user?.subscription_status || 'free';
   const planColors = getPlanColors();
   const planSymbol = getPlanSymbol(currentPlan);
 
@@ -337,17 +313,13 @@ export function ProfilePage() {
             <div>
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', margin: '0 0 0.25rem 0' }}>
                 Current Plan: <strong>
-                  {isLoadingSubscription ? (
-                    <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Loading...</span>
-                  ) : (
-                    <>
-                      {planSymbol} {currentSubscription.planName}
-                    </>
-                  )}
+                  <>
+                    {planSymbol} {formatSubscriptionStatus(user?.subscription_status)}
+                  </>
                 </strong>
               </p>
               <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>
-                Status: {currentSubscription.status}
+                Status: Active
               </p>
             </div>
             <button

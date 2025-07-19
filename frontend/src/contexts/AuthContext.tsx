@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   updatePassword: (newPassword: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -216,6 +217,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    const currentToken = localStorage.getItem('token');
+    if (currentToken) {
+      try {
+        const userData = await fetchUser(currentToken);
+        if (userData) {
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error("Failed to refresh user:", err);
+      }
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -226,7 +241,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       clearError,
-      updatePassword
+      updatePassword,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>
