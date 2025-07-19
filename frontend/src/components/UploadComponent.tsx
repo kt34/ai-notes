@@ -21,6 +21,8 @@ export function UploadComponent() {
   const dragCounter = React.useRef(0);
   const { usageData, isLoading: isLoadingUsage } = useUsage();
 
+  const isUploadDisabled = !isLoadingUsage && usageData?.remaining_uploads === 0;
+
   // Cleanup WebSocket on component unmount
   useEffect(() => {
     return () => {
@@ -278,7 +280,9 @@ export function UploadComponent() {
                 fontFamily: 'system-ui, -apple-system, sans-serif',
                 resize: 'vertical',
                 outline: 'none',
-                transition: 'border-color 0.2s ease'
+                transition: 'border-color 0.2s ease',
+                cursor: isUploadDisabled ? 'not-allowed' : 'default',
+                opacity: isUploadDisabled ? 0.5 : 1
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#5658f5';
@@ -286,7 +290,7 @@ export function UploadComponent() {
               onBlur={(e) => {
                 e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
               }}
-              disabled={isProcessing}
+              disabled={isProcessing || isUploadDisabled}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
               <p style={{ 
@@ -308,9 +312,23 @@ export function UploadComponent() {
                 {wordCount} / 10,000 words
               </span>
             </div>
-            <button type="submit" style={getSubmitButtonStyle(isProcessing || isTextOverLimit)} disabled={isProcessing || !textContent || isTextOverLimit}>
-              {isProcessing ? 'Processing...' : 'Generate from Text'}
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button 
+                type="submit" 
+                style={{
+                  ...getSubmitButtonStyle(isProcessing || isTextOverLimit || isUploadDisabled),
+                  opacity: isUploadDisabled ? 0.5 : (isProcessing || isTextOverLimit ? 0.7 : 1),
+                  cursor: isUploadDisabled ? 'not-allowed' : (isProcessing || !textContent || isTextOverLimit ? 'not-allowed' : 'pointer')
+                }} 
+                disabled={isProcessing || !textContent || isTextOverLimit || isUploadDisabled}
+                className={isUploadDisabled ? 'tooltip-container' : ''}
+              >
+                {isProcessing ? 'Processing...' : 'Generate from Text'}
+                {isUploadDisabled && (
+                  <span className="tooltip">Please upgrade your plan to generate from text</span>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
@@ -333,7 +351,8 @@ export function UploadComponent() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: '300px'
+                minHeight: '300px',
+                opacity: isUploadDisabled ? 0.5 : 1
               }}
             >
               <input
@@ -342,9 +361,9 @@ export function UploadComponent() {
                 onChange={handleFileChange}
                 accept=".doc, .docx, .pdf, .txt, .pptx"
                 style={{ display: 'none' }}
-                disabled={isProcessing}
+                disabled={isProcessing || isUploadDisabled}
               />
-              <label htmlFor="file-upload" style={getUploadLabelStyle(isProcessing)}>
+              <label htmlFor="file-upload" style={getUploadLabelStyle(isProcessing || isUploadDisabled)}>
                 <span style={{ flex: 1, textAlign: 'center' }}>
                   {file ? `Selected: ${file.name}` : 'Drop a file or click to upload'}
                 </span>
@@ -389,9 +408,23 @@ export function UploadComponent() {
                 Supported formats: DOC, DOCX, PDF, PPTX, TXT
               </p>
             </div>
-            <button type="submit" style={getSubmitButtonStyle(isProcessing)} disabled={isProcessing || !file}>
-              {isProcessing ? 'Processing...' : 'Generate from File'}
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button 
+                type="submit" 
+                style={{
+                  ...getSubmitButtonStyle(isProcessing || isUploadDisabled),
+                  opacity: isUploadDisabled ? 0.5 : (isProcessing || !file ? 0.7 : 1),
+                  cursor: isUploadDisabled ? 'not-allowed' : (isProcessing || !file ? 'not-allowed' : 'pointer')
+                }} 
+                disabled={isProcessing || !file || isUploadDisabled}
+                className={isUploadDisabled ? 'tooltip-container' : ''}
+              >
+                {isProcessing ? 'Processing...' : 'Generate from File'}
+                {isUploadDisabled && (
+                  <span className="tooltip">Please upgrade your plan to upload files</span>
+                )}
+              </button>
+            </div>
           </div>
         )}
       </form>
@@ -407,6 +440,41 @@ export function UploadComponent() {
           border-top-color: #fff;
           border-radius: 50%;
           animation: spin 1s linear infinite;
+        }
+        .tooltip-container {
+          position: relative;
+        }
+        .tooltip {
+          visibility: hidden;
+          background-color: rgba(0, 0, 0, 0.9);
+          color: white;
+          text-align: center;
+          border-radius: 6px;
+          padding: 8px 12px;
+          position: absolute;
+          z-index: 1000;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          white-space: nowrap;
+          font-size: 0.8rem;
+          font-weight: normal;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        .tooltip::after {
+          content: "";
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          margin-left: -5px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+        }
+        .tooltip-container:hover .tooltip {
+          visibility: visible;
+          opacity: 1;
         }
       `}</style>
     </div>

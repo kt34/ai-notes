@@ -19,6 +19,8 @@ export function RecordingApp({}: RecordingAppProps) {
   const processingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { usageData, isLoading: isLoadingUsage } = useUsage();
+  
+  const isRecordingDisabled = !isLoadingUsage && usageData?.remaining_recordings === 0;
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -182,6 +184,7 @@ export function RecordingApp({}: RecordingAppProps) {
   };
 
   const handleToggleRecording = async () => {
+    if (isRecordingDisabled) return; // Prevent action if disabled
     console.log('🔄 Toggle recording called. Current state:', isRecordingRef.current);
     if (isRecordingRef.current) {
       stopRecording();
@@ -459,13 +462,13 @@ export function RecordingApp({}: RecordingAppProps) {
       }}>
         <button 
           onClick={handleToggleRecording} 
-          disabled={isProcessing && !isRecordingRef.current}
-          className="record-button"
+          disabled={isProcessing && !isRecordingRef.current || isRecordingDisabled}
+          className={`record-button ${isRecordingDisabled ? 'tooltip-container' : ''}`}
           style={{ 
             padding: '15px 30px',
             fontSize: '1.2rem',
-            cursor: (isProcessing && !isRecordingRef.current) ? 'not-allowed' : 'pointer',
-            backgroundColor: (isProcessing && !isRecordingRef.current) ? 'rgba(255, 255, 255, 0.1)' : (isRecordingRef.current ? '#ef4444' : '#646cff'),
+            cursor: isRecordingDisabled ? 'not-allowed' : ((isProcessing && !isRecordingRef.current) ? 'not-allowed' : 'pointer'),
+            backgroundColor: isRecordingDisabled ? 'rgba(255, 255, 255, 0.1)' : ((isProcessing && !isRecordingRef.current) ? 'rgba(255, 255, 255, 0.1)' : (isRecordingRef.current ? '#ef4444' : '#646cff')),
             border: 'none',
             borderRadius: '50px',
             color: '#fff',
@@ -475,7 +478,7 @@ export function RecordingApp({}: RecordingAppProps) {
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            opacity: (isProcessing && !isRecordingRef.current) ? 0.7 : 1,
+            opacity: isRecordingDisabled ? 0.5 : ((isProcessing && !isRecordingRef.current) ? 0.7 : 1),
             transform: (isProcessing && !isRecordingRef.current) ? 'none' : 'translateY(0)'
           }}
         >
@@ -483,8 +486,12 @@ export function RecordingApp({}: RecordingAppProps) {
             {(isProcessing && !isRecordingRef.current) ? '⏳' : (isRecordingRef.current ? '🛑' : '🎤')}
           </span>
           {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? `Stop Recording (${formatDuration(duration)})` : 'Start Recording')}
+          {isRecordingDisabled && (
+            <span className="tooltip">Please upgrade your plan to record more lectures</span>
+          )}
         </button>
-        {isRecording && (
+        
+        {isRecording && !isRecordingDisabled && (
           <p style={{
             fontSize: '0.8rem',
             color: 'rgba(255, 255, 255, 0.5)',
@@ -700,6 +707,41 @@ export function RecordingApp({}: RecordingAppProps) {
           border-top-color: #fff;
           border-radius: 50%;
           animation: spin 1s linear infinite;
+        }
+        .tooltip-container {
+          position: relative;
+        }
+        .tooltip {
+          visibility: hidden;
+          background-color: rgba(0, 0, 0, 0.9);
+          color: white;
+          text-align: center;
+          border-radius: 6px;
+          padding: 8px 12px;
+          position: absolute;
+          z-index: 1000;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          white-space: nowrap;
+          font-size: 0.8rem;
+          font-weight: normal;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        .tooltip::after {
+          content: "";
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          margin-left: -5px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+        }
+        .tooltip-container:hover .tooltip {
+          visibility: visible;
+          opacity: 1;
         }
       `}</style>
     </div>
