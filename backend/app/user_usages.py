@@ -40,41 +40,59 @@ async def update_usage_recordings(user_id: str):
    
 async def get_remaining_uploads_count(user_id: str):
     try:
-        # Single query with joins to get all needed data
+        print(user_id)
+        # Use left joins to be more resilient to missing related records
         response = supabase.table("profiles") \
-            .select("subscription_status, plan_limits!inner(max_uploads), user_usage!inner(uploads_count)") \
+            .select("subscription_status, plan_limits!left(max_uploads), user_usage!left(uploads_count)") \
             .eq("id", user_id) \
             .single() \
             .execute()
-        
+
         print(response)
-        
-        subscription_status = response.data['subscription_status']
-        max_uploads = response.data['plan_limits']['max_uploads']
-        current_uploads = response.data['user_usage']['uploads_count']
-        
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+
+        # Safely access nested data with default values
+        plan_limits = response.data.get('plan_limits')
+        user_usage = response.data.get('user_usage')
+
+        max_uploads = plan_limits.get('max_uploads', 0) if plan_limits else 0
+        current_uploads = user_usage.get('uploads_count', 0) if user_usage else 0
+
         remaining_uploads = max_uploads - current_uploads
         
         return {"success": True, "remaining_uploads": remaining_uploads}
     except Exception as e:
+        # Re-raise HTTPExceptions, otherwise wrap
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=f"Error getting remaining uploads: {e}")
 
 async def get_remaining_recordings_count(user_id: str):
     try:
         response = supabase.table("profiles") \
-            .select("subscription_status, plan_limits!inner(max_recordings), user_usage!inner(recordings_count)") \
+            .select("subscription_status, plan_limits!left(max_recordings), user_usage!left(recordings_count)") \
             .eq("id", user_id) \
             .single() \
             .execute()
         
-        subscription_status = response.data['subscription_status']
-        max_recordings = response.data['plan_limits']['max_recordings']
-        current_recordings = response.data['user_usage']['recordings_count']    
+        if not response.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+
+        # Safely access nested data with default values
+        plan_limits = response.data.get('plan_limits')
+        user_usage = response.data.get('user_usage')
+
+        max_recordings = plan_limits.get('max_recordings', 0) if plan_limits else 0
+        current_recordings = user_usage.get('recordings_count', 0) if user_usage else 0
 
         remaining_recordings = max_recordings - current_recordings
-
+ 
         return {"success": True, "remaining_recordings": remaining_recordings}
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=f"Error getting remaining recordings: {e}")
 
      

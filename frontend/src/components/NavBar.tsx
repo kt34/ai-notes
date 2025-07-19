@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../utils/api';
-import { useUsage } from '../hooks/useUsage';
 
 interface SubscriptionData {
   subscription_status: string;
@@ -17,7 +16,6 @@ export function NavBar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   // Fetch subscription data
   useEffect(() => {
@@ -267,47 +265,7 @@ export function NavBar() {
                 </div>
               </div>
 
-              {/* Usage Information */}
-              {!isLoadingUsage && usageData && (
-                <div style={{
-                  padding: '0.75rem 1rem',
-                  borderBottom: '1px solid rgba(86, 88, 245, 0.15)',
-                  marginBottom: '0.5rem'
-                }}>
-                  <div style={{
-                    fontSize: '0.8rem',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    marginBottom: '0.5rem',
-                    fontWeight: '500'
-                  }}>
-                    Usage Remaining
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    gap: '1rem',
-                    fontSize: '0.85rem'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      color: 'rgba(255, 255, 255, 0.8)'
-                    }}>
-                      <span>📄</span>
-                      <span>{usageData.remaining_uploads} uploads</span>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      color: 'rgba(255, 255, 255, 0.8)'
-                    }}>
-                      <span>🎤</span>
-                      <span>{usageData.remaining_recordings} recordings</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Usage Information section removed */}
 
               <div style={{ padding: '0.25rem' }}>
                 <button

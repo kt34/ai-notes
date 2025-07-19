@@ -383,27 +383,34 @@ export function RecordingApp({}: RecordingAppProps) {
           }}>
             Record Live
           </h1>
-          {!isLoadingUsage && usageData && (
-            <span style={{
-              position: 'absolute',
-              top: '50%',
-              right: 0,
-              transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '8px',
-              padding: '0.25rem 0.5rem',
-              fontSize: '0.8rem',
-              fontWeight: '500',
-              color: 'rgba(255, 255, 255, 0.7)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}>
-              <span>🎤 </span>
-              <span> {usageData.remaining_recordings} remaining</span>
-            </span>
-          )}
+          <span style={{
+            position: 'absolute',
+            top: '50%',
+            right: 0,
+            transform: 'translateY(-50%)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '0.25rem 0.5rem',
+            fontSize: '0.8rem',
+            fontWeight: '500',
+            color: 'rgba(255, 255, 255, 0.7)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.25rem',
+            minHeight: '27px',
+            minWidth: '95px',
+          }}>
+            {isLoadingUsage ? (
+              <div className="loading-spinner-small" />
+            ) : (
+              <>
+                <span>🎤</span>
+                <span>{usageData?.remaining_recordings ?? 'N/A'} remaining</span>
+              </>
+            )}
+          </span>
         </div>
         <p style={{ 
           fontSize: 'clamp(1rem, 1.5vw, 1.1rem)', 
@@ -644,6 +651,18 @@ export function RecordingApp({}: RecordingAppProps) {
           background-size: 200% 100%;
           animation: shimmer 2s infinite linear;
           /* The border-radius will be clipped by the parent .loading-bar's overflow:hidden */
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .loading-spinner-small {
+          width: 12px;
+          height: 12px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </div>

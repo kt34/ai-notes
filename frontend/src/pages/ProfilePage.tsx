@@ -201,8 +201,7 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {/* Usage Statistics */}
-        {!isLoadingUsage && usageData && (
+          {/* Usage Statistics */}
           <div style={{ marginBottom: '2rem' }}>
             <h2 style={{ 
               color: '#fff',
@@ -219,6 +218,7 @@ export function ProfilePage() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '1rem'
             }}>
+              {/* Uploads Card */}
               <div style={{
                 background: 'rgba(255, 255, 255, 0.02)',
                 padding: '1.5rem',
@@ -250,11 +250,20 @@ export function ProfilePage() {
                   color: '#fff',
                   fontSize: '2rem',
                   margin: '0',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  minHeight: '2rem', // Prevent layout shift
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
                 }}>
-                  {usageData.remaining_uploads}
+                  {isLoadingUsage ? (
+                    <div className="loading-spinner-large" />
+                  ) : (
+                    usageData?.remaining_uploads ?? 'N/A'
+                  )}
                 </p>
               </div>
+              {/* Recordings Card */}
               <div style={{
                 background: 'rgba(255, 255, 255, 0.02)',
                 padding: '1.5rem',
@@ -286,14 +295,21 @@ export function ProfilePage() {
                   color: '#fff',
                   fontSize: '2rem',
                   margin: '0',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  minHeight: '2rem', // Prevent layout shift
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
                 }}>
-                  {usageData.remaining_recordings}
+                  {isLoadingUsage ? (
+                    <div className="loading-spinner-large" />
+                  ) : (
+                    usageData?.remaining_recordings ?? 'N/A'
+                  )}
                 </p>
               </div>
             </div>
           </div>
-        )}
 
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ color: '#fff', fontSize: '1.4rem', marginBottom: '1rem' }}>
