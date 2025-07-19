@@ -95,6 +95,49 @@ async def get_remaining_recordings_count(user_id: str):
             raise e
         raise HTTPException(status_code=500, detail=f"Error getting remaining recordings: {e}")
 
+
+async def get_usage_summary(user_id: str):
+    try:
+        response = supabase.table("profiles") \
+            .select("subscription_status, plan_limits!left(max_uploads, max_recordings), user_usage!left(uploads_count, recordings_count, usage_period_end)") \
+            .eq("id", user_id) \
+            .single() \
+            .execute()
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="User profile not found.")
+
+        profile_data = response.data
+        plan_limits = profile_data.get('plan_limits')
+        user_usage = profile_data.get('user_usage')
+
+        max_uploads = plan_limits.get('max_uploads') if plan_limits else None
+        current_uploads = user_usage.get('uploads_count', 0) if user_usage else 0
+        if max_uploads is not None:
+            remaining_uploads = max_uploads - current_uploads
+        else:
+            remaining_uploads = -1  # Use -1 for unlimited
+
+        max_recordings = plan_limits.get('max_recordings') if plan_limits else None
+        current_recordings = user_usage.get('recordings_count', 0) if user_usage else 0
+        if max_recordings is not None:
+            remaining_recordings = max_recordings - current_recordings
+        else:
+            remaining_recordings = -1  # Use -1 for unlimited
+
+        usage_period_end = user_usage.get('usage_period_end') if user_usage else None
+        
+        return {
+            "success": True, 
+            "remaining_uploads": remaining_uploads,
+            "remaining_recordings": remaining_recordings,
+            "usage_period_end": usage_period_end
+        }
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Error getting usage summary: {e}")
+
      
 if __name__ == "__main__":
     import asyncio

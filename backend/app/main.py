@@ -13,7 +13,15 @@ from .auth import (
     VerifyEmailRequest, AuthResponse, ResendVerificationRequest, 
     resend_verification_email, forgot_password, ForgotPasswordRequest
 )
-from .user_usages import get_usage, update_usage_plan, update_usage_uploads, update_usage_recordings, get_remaining_uploads_count, get_remaining_recordings_count
+from .user_usages import (
+    get_usage, 
+    update_usage_plan, 
+    update_usage_uploads, 
+    update_usage_recordings, 
+    get_remaining_uploads_count, 
+    get_remaining_recordings_count,
+    get_usage_summary
+)
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
@@ -133,6 +141,12 @@ async def get_remaining_recordings_route(current_user: SupabaseUser = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/usage/summary")
+async def get_usage_summary_route(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    try:
+        return await get_usage_summary(current_user.id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/lectures")
 async def get_lectures(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):

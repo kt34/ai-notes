@@ -438,7 +438,14 @@ export function RecordingApp({}: RecordingAppProps) {
             ) : (
               <>
                 <span>🎤</span>
-                <span>{usageData?.remaining_recordings ?? 'N/A'} remaining</span>
+                {usageData?.remaining_recordings === -1 ? (
+                  <>
+                    <span style={{ fontSize: '1.1rem', position: 'relative', top: '-1.5px' }}>∞</span>
+                    <span>Recordings</span>
+                  </>
+                ) : (
+                  <span>{`${usageData?.remaining_recordings ?? 'N/A'} remaining`}</span>
+                )}
               </>
             )}
           </span>

@@ -280,7 +280,7 @@ export function ProfilePage() {
                   {isLoadingUsage ? (
                     <div className="loading-spinner-large" />
                   ) : (
-                    usageData?.remaining_uploads ?? 'N/A'
+                    usageData?.remaining_uploads === -1 ? '∞' : usageData?.remaining_uploads ?? 'N/A'
                   )}
                 </p>
               </div>
@@ -325,7 +325,7 @@ export function ProfilePage() {
                   {isLoadingUsage ? (
                     <div className="loading-spinner-large" />
                   ) : (
-                    usageData?.remaining_recordings ?? 'N/A'
+                    usageData?.remaining_recordings === -1 ? '∞' : usageData?.remaining_recordings ?? 'N/A'
                   )}
                 </p>
               </div>
@@ -358,6 +358,11 @@ export function ProfilePage() {
               <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>
                 Status: Active
               </p>
+              {user?.subscription_status !== 'free' && usageData?.usage_period_end && (
+                <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+                  Renews on: {new Date(usageData.usage_period_end).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
             </div>
             <button
               onClick={() => navigate('/pricing')}

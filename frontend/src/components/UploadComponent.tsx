@@ -216,7 +216,14 @@ export function UploadComponent() {
           ) : (
             <>
               <span>📄</span>
-              <span>{usageData?.remaining_uploads ?? 'N/A'} remaining</span>
+              {usageData?.remaining_uploads === -1 ? (
+                <>
+                  <span style={{ fontSize: '1.1rem', position: 'relative', top: '-1.5px' }}>∞</span>
+                  <span>Uploads</span>
+                </>
+              ) : (
+                <span>{`${usageData?.remaining_uploads ?? 'N/A'} remaining`}</span>
+              )}
             </>
           )}
         </span>
