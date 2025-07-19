@@ -12,15 +12,15 @@ export function ProfilePage() {
   const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
-  // const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
+  const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const paymentStatus = queryParams.get('payment_status');
     const sessionId = queryParams.get('session_id');
 
-    if (paymentStatus === 'success' && sessionId) {
-      // setIsUpdatingSubscription(true);
+    if (paymentStatus === 'success' && sessionId && !isUpdatingSubscription) {
+      setIsUpdatingSubscription(true);
       setPaymentStatusMessage('Verifying payment and updating your subscription...');
 
       const updateSubscription = async () => {
@@ -36,8 +36,6 @@ export function ProfilePage() {
           console.error("Failed to update subscription:", error);
           setPaymentStatusMessage('Your payment was successful, but there was an error updating your account. Please contact support.');
         } finally {
-          // setIsUpdatingSubscription(false);
-          // Remove query params from URL
           navigate(location.pathname, { replace: true });
         }
       };
@@ -47,7 +45,7 @@ export function ProfilePage() {
       setPaymentStatusMessage('Payment cancelled. Your subscription was not activated. You can try again anytime from the pricing page.');
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate, refreshUser, token]);
+  }, [location, navigate, refreshUser, token, isUpdatingSubscription]);
 
   const handleLogout = async () => {
     setIsLoading(true);

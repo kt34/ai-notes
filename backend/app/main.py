@@ -227,7 +227,7 @@ async def create_checkout_session(
     price_id = None
 
     if plan_type == "plus":
-        price_id = settings.STRIPE_PRICE_STANDARD
+        price_id = settings.STRIPE_PRICE_PLUS
     elif plan_type == "pro":
         price_id = settings.STRIPE_PRICE_PRO
     elif plan_type == "max":
@@ -262,9 +262,19 @@ async def update_subscription_after_payment(
     current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
 ):
     """Update user's subscription status after successful Stripe payment"""
+    
+    print("Updating subscription endpoint in backend now")
+    print("Request data is " + str(request_data))
+    print("Current user is " + str(current_user))
+
     try:
         # Retrieve the checkout session from Stripe to verify payment
-        session = stripe.checkout.Session.retrieve(request_data.session_id)
+        session = stripe.checkout.Session.retrieve(
+            request_data.session_id,
+            expand=["line_items"]
+        )
+
+        print("Session is " + str(session))
         
         if session.payment_status != 'paid':
             raise HTTPException(status_code=400, detail="Payment not completed")
@@ -276,7 +286,7 @@ async def update_subscription_after_payment(
         price_id = session.line_items.data[0].price.id if session.line_items.data else None
         plan_type = None
         
-        if price_id == settings.STRIPE_PRICE_STANDARD:
+        if price_id == settings.STRIPE_PRICE_PLUS:
             plan_type = "plus"
         elif price_id == settings.STRIPE_PRICE_PRO:
             plan_type = "pro"
@@ -427,6 +437,8 @@ async def websocket_transcribe(ws: WebSocket):
     await ws.accept()
     
     stt_client = STTClient(settings.DEEPGRAM_API_KEY) # Create new instance per connection
+
+    print("API_KEY IS: " + settings.DEEPGRAM_API_KEY)
 
     try:
 

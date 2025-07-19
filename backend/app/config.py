@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     STRIPE_PRODUCT_ID: str
     STRIPE_PRICE_MAX: str
     STRIPE_PRICE_PRO: str
-    STRIPE_PRICE_STANDARD: str
+    STRIPE_PRICE_PLUS: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
