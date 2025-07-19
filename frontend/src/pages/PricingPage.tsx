@@ -84,7 +84,7 @@ export function PricingPage() {
   };
 
   const plans = [
-    { id: 'standard', name: 'Standard Plan', description: 'Access to core transcription and summarization features for individual use.', price: '$10/mo', features: ['Up to 10 hours of transcription/month', 'Standard AI summaries', 'Email support'] },
+    { id: 'plus', name: 'Plus Plan', description: 'Access to core transcription and summarization features for individual use.', price: '$10/mo', features: ['Up to 10 hours of transcription/month', 'Standard AI summaries', 'Email support'] },
     { id: 'pro', name: 'Pro Plan', description: 'Advanced features for professionals and frequent users, with higher limits.', price: '$20/mo', features: ['Up to 30 hours of transcription/month', 'Detailed AI summaries & key concepts', 'Section-by-section breakdown', 'Priority email support'] },
     { id: 'max', name: 'Max Plan', description: 'Unlimited access and premium support for power users and teams.', price: '$30/mo', features: ['Unlimited transcription hours', 'All AI features including advanced analytics', 'Dedicated support channel', 'Early access to new features'] },
   ];

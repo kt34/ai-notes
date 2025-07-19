@@ -69,7 +69,6 @@ class UserProfileResponse(BaseModel):
     id: str
     email: str
     full_name: Optional[str] = None
-    avatar_url: Optional[str] = None
     subscription_status: Optional[str] = None
     
 
@@ -87,7 +86,6 @@ async def read_users_me(current_user: SupabaseUser = Depends(get_authenticated_u
             id=current_user.id,
             email=current_user.email,
             full_name=profile_data.get('full_name'),
-            avatar_url=profile_data.get('avatar_url'),
             subscription_status=profile_data.get('subscription_status')
             # map other fields here...
         )
@@ -215,7 +213,10 @@ async def forgot_password_endpoint(request: ForgotPasswordRequest):
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class CreateCheckoutSessionRequest(BaseModel):
-    plan_type: str # e.g., "standard", "pro", "max"
+    plan_type: str # e.g., "plus", "pro", "max"
+
+class UpdateSubscriptionRequest(BaseModel):
+    session_id: str
 
 @app.post("/api/v1/stripe/create-checkout-session")
 async def create_checkout_session(
@@ -225,7 +226,7 @@ async def create_checkout_session(
     plan_type = request_data.plan_type
     price_id = None
 
-    if plan_type == "standard":
+    if plan_type == "plus":
         price_id = settings.STRIPE_PRICE_STANDARD
     elif plan_type == "pro":
         price_id = settings.STRIPE_PRICE_PRO
@@ -249,13 +250,53 @@ async def create_checkout_session(
             mode='subscription', # Assuming these are subscription prices
             success_url=success_url,
             cancel_url=cancel_url,
-            # You can add customer_email: current_user.email if you want to prefill it
-            # and associate the Stripe customer with your Supabase user
-            # For more robust integration, consider creating/retrieving Stripe customer ID
-            # and passing it via the `customer` parameter.
-            # client_reference_id=current_user.id # Useful for webhook reconciliation
+            client_reference_id=current_user.id # Store user ID for webhook reconciliation
         )
         return {"sessionId": checkout_session.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/stripe/update-subscription")
+async def update_subscription_after_payment(
+    request_data: UpdateSubscriptionRequest,
+    current_user: SupabaseUser = Depends(get_authenticated_user_from_header)
+):
+    """Update user's subscription status after successful Stripe payment"""
+    try:
+        # Retrieve the checkout session from Stripe to verify payment
+        session = stripe.checkout.Session.retrieve(request_data.session_id)
+        
+        if session.payment_status != 'paid':
+            raise HTTPException(status_code=400, detail="Payment not completed")
+        
+        if session.client_reference_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Session does not belong to current user")
+        
+        # Determine the plan type based on the price ID
+        price_id = session.line_items.data[0].price.id if session.line_items.data else None
+        plan_type = None
+        
+        if price_id == settings.STRIPE_PRICE_STANDARD:
+            plan_type = "plus"
+        elif price_id == settings.STRIPE_PRICE_PRO:
+            plan_type = "pro"
+        elif price_id == settings.STRIPE_PRICE_MAX:
+            plan_type = "max"
+        
+        if not plan_type:
+            raise HTTPException(status_code=400, detail="Could not determine plan type from session")
+        
+        # Update the user's subscription status in the database
+        await update_usage_plan(current_user.id, plan_type)
+        
+        return {
+            "success": True,
+            "message": "Subscription updated successfully",
+            "plan_type": plan_type
+        }
+        
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -2,30 +2,52 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUsage } from '../hooks/useUsage';
+import { apiRequest } from '../utils/api';
 
 export function ProfilePage() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
+  // const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const paymentStatus = queryParams.get('payment_status');
+    const sessionId = queryParams.get('session_id');
 
-    if (paymentStatus === 'success') {
-      setPaymentStatusMessage('🎉 Payment successful! Your subscription has been activated.');
-      // Refresh user data to get the new subscription status
-      refreshUser();
-      navigate(location.pathname, { replace: true });
+    if (paymentStatus === 'success' && sessionId) {
+      // setIsUpdatingSubscription(true);
+      setPaymentStatusMessage('Verifying payment and updating your subscription...');
+
+      const updateSubscription = async () => {
+        try {
+          await apiRequest('/api/v1/stripe/update-subscription', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: sessionId }),
+            token
+          });
+          setPaymentStatusMessage('🎉 Payment successful! Your subscription has been activated.');
+          await refreshUser(); // Refresh user data to get new plan
+        } catch (error) {
+          console.error("Failed to update subscription:", error);
+          setPaymentStatusMessage('Your payment was successful, but there was an error updating your account. Please contact support.');
+        } finally {
+          // setIsUpdatingSubscription(false);
+          // Remove query params from URL
+          navigate(location.pathname, { replace: true });
+        }
+      };
+
+      updateSubscription();
     } else if (paymentStatus === 'cancelled') {
       setPaymentStatusMessage('Payment cancelled. Your subscription was not activated. You can try again anytime from the pricing page.');
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate, refreshUser]);
+  }, [location, navigate, refreshUser, token]);
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -41,12 +63,13 @@ export function ProfilePage() {
 
   // Helper function to format subscription status
   const formatSubscriptionStatus = (status: string | null | undefined) => {
+    console.log(user)
     if (!status) return 'Free Plan';
     switch (status) {
       case 'free':
         return 'Free Plan';
-      case 'standard':
-        return 'Standard Plan';
+      case 'plus':
+        return 'Plus Plan';
       case 'pro':
         return 'Pro Plan';
       case 'max':
@@ -67,7 +90,7 @@ export function ProfilePage() {
 
   const getPlanSymbol = (status: string) => {
     switch (status) {
-      case 'standard':
+      case 'plus':
         return '⭐';
       case 'pro':
         return '💎';

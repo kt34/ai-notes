@@ -7,7 +7,6 @@ interface User {
   id: string;
   email: string;
   full_name?: string;
-  avatar_url?: string;
   subscription_status?: string;
 }
 
@@ -84,11 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         skipAuthRedirect: true
       });
       
-      return {
-        id: userData.id,
-        email: userData.email,
-        full_name: userData.full_name || null
-      };
+      return userData;
     } catch (err) {
       if (err instanceof TokenExpiredError) {
         return null;

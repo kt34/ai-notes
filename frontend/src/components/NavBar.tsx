@@ -43,7 +43,7 @@ export function NavBar() {
 
   const getPlanSymbol = (status: string) => {
     switch (status) {
-      case 'standard':
+      case 'plus':
         return '⭐';
       case 'pro':
         return '💎';
