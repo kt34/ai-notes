@@ -480,8 +480,12 @@ async def websocket_transcribe(ws: WebSocket):
         # Construct the final transcript for OpenAI and database
         built_transcript_from_finals = " ".join(final_transcript_segments).strip()
         transcript = built_transcript_from_finals
+        
+        failed_transcript = False
 
         if not transcript: # if built_transcript_from_finals is empty
+            print("Transcript is empty")
+            failed_transcript = True
             if last_processed_stt_text:
                 transcript = last_processed_stt_text
             elif first_chunk_received:
@@ -514,15 +518,17 @@ async def websocket_transcribe(ws: WebSocket):
                 "processing_status": "Creating your AI-powered summary...",
                 "progress": 40
             }))
-            summary = await summarizer.summarize(transcript)
-            print("\nChatGPT Full Summary: " + summary)
 
-            await ws.send_text(json.dumps({
-                "processing_status": "Pulling out the important insights...",
-                "progress": 60
-            }))
-            structured_summary_data = summarizer.parse_structured_summary(summary)
-            print("\nParsed Structured Summary Data:\n", structured_summary_data)
+            if not failed_transcript:
+                summary = await summarizer.summarize(transcript)
+                print("\nChatGPT Full Summary: " + summary)
+
+                await ws.send_text(json.dumps({
+                    "processing_status": "Pulling out the important insights...",
+                    "progress": 60
+                }))
+                structured_summary_data = summarizer.parse_structured_summary(summary)
+                print("\nParsed Structured Summary Data:\n", structured_summary_data)
 
             # Store in DB
             await ws.send_text(json.dumps({
@@ -580,7 +586,8 @@ async def websocket_transcribe(ws: WebSocket):
                     print("Summary and final transcript sent successfully.")
 
                     print("Now trying to increment the usage recordings for " + user_id)
-                    await update_usage_recordings(user_id)
+                    if not failed_transcript:
+                        await update_usage_recordings(user_id)
                 except Exception as e:
                     print(f"Failed to send summary/final transcript: {str(e)}")
             else:

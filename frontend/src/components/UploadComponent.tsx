@@ -7,6 +7,7 @@ import { useUsage } from '../hooks/useUsage';
 export function UploadComponent() {
   const [activeTab, setActiveTab] = useState('file'); // Changed default to 'file'
   const [textContent, setTextContent] = useState('');
+  const [wordCount, setWordCount] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +115,15 @@ export function UploadComponent() {
       setError(null);
     }
   };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    setTextContent(text);
+    setWordCount(words.length);
+  };
+
+  const isTextOverLimit = wordCount > 10000;
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -255,7 +265,7 @@ export function UploadComponent() {
             <textarea
               placeholder="Paste your text here..."
               value={textContent}
-              onChange={(e) => setTextContent(e.target.value)}
+              onChange={handleTextChange}
               style={{
                 width: '100%',
                 minHeight: '300px',
@@ -278,16 +288,27 @@ export function UploadComponent() {
               }}
               disabled={isProcessing}
             />
-            <p style={{ 
-              color: 'rgba(255, 255, 255, 0.5)', 
-              fontSize: '0.9rem', 
-              marginTop: '0.75rem',
-              marginBottom: '0.5rem',
-              textAlign: 'left'
-            }}>
-              Note: AI summary may be less accurate if text is shorter than 500 words
-            </p>
-            <button type="submit" style={getSubmitButtonStyle(isProcessing)} disabled={isProcessing || !textContent}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+              <p style={{ 
+                color: isTextOverLimit ? '#ef4444' : 'rgba(255, 255, 255, 0.5)', 
+                fontSize: '0.9rem', 
+                margin: 0,
+                fontWeight: isTextOverLimit ? 'bold' : 'normal'
+              }}>
+                {isTextOverLimit 
+                  ? 'You have exceeded the 10,000 word limit.'
+                  : 'Note: AI summary may be less accurate if text is shorter than 500 words'
+                }
+              </p>
+              <span style={{ 
+                color: isTextOverLimit ? '#ef4444' : 'rgba(255, 255, 255, 0.5)',
+                fontSize: '0.9rem',
+                fontWeight: isTextOverLimit ? 'bold' : 'normal'
+              }}>
+                {wordCount} / 10,000 words
+              </span>
+            </div>
+            <button type="submit" style={getSubmitButtonStyle(isProcessing || isTextOverLimit)} disabled={isProcessing || !textContent || isTextOverLimit}>
               {isProcessing ? 'Processing...' : 'Generate from Text'}
             </button>
           </div>

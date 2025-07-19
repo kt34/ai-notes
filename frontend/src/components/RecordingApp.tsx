@@ -8,6 +8,7 @@ export interface RecordingAppProps {}
 
 export function RecordingApp({}: RecordingAppProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [duration, setDuration] = useState(0);
   const [transcription, setTranscription] = useState('');
   const [completedTranscriptSegments, setCompletedTranscriptSegments] = useState<string[]>([]);
   const [currentInterimTranscript, setCurrentInterimTranscript] = useState('');
@@ -27,6 +28,7 @@ export function RecordingApp({}: RecordingAppProps) {
 
   // Ref to hold the latest recording status for the audio processing callback
   const isRecordingRef = useRef(isRecording);
+  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { token } = useAuth();
   const backendUrl = `${config.apiUrl.replace('http', 'ws')}/ws/transcribe?token=${token}`;
@@ -36,11 +38,30 @@ export function RecordingApp({}: RecordingAppProps) {
     console.log('🔄 Recording state changed:', isRecording);
     isRecordingRef.current = isRecording;
     if (isRecording) {
+      // Start duration timer
+      setDuration(0);
+      durationIntervalRef.current = setInterval(() => {
+        setDuration(prev => {
+          const newDuration = prev + 1;
+          // Auto-stop at 2 hours 5 minutes (7500 seconds)
+          if (newDuration >= 7500) {
+            stopRecording();
+          }
+          return newDuration;
+        });
+      }, 1000);
+
       // Reset transcript states when starting a new recording
       setCompletedTranscriptSegments([]);
       setCurrentInterimTranscript('');
       setTranscription('🟢 Connected. Start speaking...');
       setProcessingProgress(0);
+    } else {
+      // Clear duration timer when not recording
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = null;
+      }
     }
   }, [isRecording]);
 
@@ -121,6 +142,13 @@ export function RecordingApp({}: RecordingAppProps) {
       cleanup(false); 
     };
   }, []); 
+
+  const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
 
   const stopRecording = () => {
     console.log('🛑 Stopping recording...');
@@ -454,8 +482,17 @@ export function RecordingApp({}: RecordingAppProps) {
           <span style={{ fontSize: '1.4rem' }}>
             {(isProcessing && !isRecordingRef.current) ? '⏳' : (isRecordingRef.current ? '🛑' : '🎤')}
           </span>
-          {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? 'Stop Recording' : 'Start Recording')}
+          {(isProcessing && !isRecordingRef.current) ? 'Processing...' : (isRecordingRef.current ? `Stop Recording (${formatDuration(duration)})` : 'Start Recording')}
         </button>
+        {isRecording && (
+          <p style={{
+            fontSize: '0.8rem',
+            color: 'rgba(255, 255, 255, 0.5)',
+            margin: '0.5rem 0 0 0'
+          }}>
+            Note: Recording will automatically stop after 2 hours and 5 minutes.
+          </p>
+        )}
 
         {isProcessing && (
           <div style={{
