@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiRequest } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,10 +9,11 @@ interface UsageData {
 }
 
 export const useUsage = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const previousSubscriptionStatus = useRef(user?.subscription_status);
 
   const fetchUsage = useCallback(async () => {
     if (!token) {
@@ -38,8 +39,23 @@ export const useUsage = () => {
   }, [token]);
 
   useEffect(() => {
-    fetchUsage();
-  }, [fetchUsage]);
+    const currentSubscriptionStatus = user?.subscription_status;
+    const hasSubscriptionChanged = previousSubscriptionStatus.current !== currentSubscriptionStatus;
+    
+    if (hasSubscriptionChanged && previousSubscriptionStatus.current) {
+      // Subscription status changed - add a small delay to ensure backend is updated
+      const timer = setTimeout(() => {
+        fetchUsage();
+      }, 1000);
+      
+      previousSubscriptionStatus.current = currentSubscriptionStatus;
+      return () => clearTimeout(timer);
+    } else {
+      // Initial load or token change - fetch immediately
+      fetchUsage();
+      previousSubscriptionStatus.current = currentSubscriptionStatus;
+    }
+  }, [fetchUsage, user?.subscription_status]);
 
   return { usageData, isLoading, error, refetch: fetchUsage };
 }; 

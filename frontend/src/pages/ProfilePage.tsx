@@ -9,7 +9,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const { usageData, isLoading: isLoadingUsage, refetch: refetchUsage } = useUsage();
+  const { usageData, isLoading: isLoadingUsage } = useUsage();
 
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null);
   const [isUpdatingSubscription, setIsUpdatingSubscription] = useState(false);
@@ -35,8 +35,8 @@ export function ProfilePage() {
           });
           setPaymentStatusMessage('🎉 Payment successful! Your subscription has been activated.');
           await refreshUser(); // Refresh user data to get new plan
-          await refetchUsage(); // Refetch usage data
           refreshNavBar(); // Refresh navbar subscription data
+          // Note: useUsage hook will automatically refetch when user data changes
         } catch (error) {
           console.error("Failed to update subscription:", error);
           setPaymentStatusMessage('Your payment was successful, but there was an error updating your account. Please contact support.');
@@ -50,7 +50,7 @@ export function ProfilePage() {
       setPaymentStatusMessage('Payment cancelled. Your subscription was not activated. You can try again anytime from the pricing page.');
       navigate(location.pathname, { replace: true });
     }
-  }, [location, navigate, refreshUser, refreshNavBar, token, isUpdatingSubscription, refetchUsage]);
+  }, [location, navigate, refreshUser, refreshNavBar, token, isUpdatingSubscription]);
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -74,8 +74,8 @@ export function ProfilePage() {
       });
       setPaymentStatusMessage(response.message || 'Your subscription has been cancelled.');
       await refreshUser();
-      await refetchUsage(); // Refetch usage data after cancellation
       refreshNavBar(); // Refresh navbar subscription data
+      // Note: useUsage hook will automatically refetch when user data changes
       setShowCancelConfirm(false);
     } catch (err: any) {
       setCancelError(err.message || 'Failed to cancel subscription. Please contact support.');
