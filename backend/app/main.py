@@ -355,6 +355,12 @@ async def websocket_process_upload(ws: WebSocket):
             filename = content_message.get("filename", "")
             file_bytes_str = content_message.get("data", "")
             file_bytes = base64.b64decode(file_bytes_str)
+
+            # Enforce 10MB file size limit
+            if len(file_bytes) > 10 * 1024 * 1024:
+                await ws.send_text(json.dumps({"error": "File size exceeds the 10MB limit."}))
+                return
+
             file_like_object = io.BytesIO(file_bytes)
 
             await ws.send_text(json.dumps({
@@ -385,6 +391,11 @@ async def websocket_process_upload(ws: WebSocket):
 
         if not transcript.strip():
             raise ValueError("The provided content is empty.")
+
+        # Enforce 15,000 word limit
+        words = transcript.split()
+        if len(words) > 15000:
+            transcript = " ".join(words[:15000])
 
         # 3. Process the content and send progress updates
         await ws.send_text(json.dumps({

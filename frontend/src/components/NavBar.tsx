@@ -180,93 +180,94 @@ export function NavBar() {
                 border: '1px solid rgba(86, 88, 245, 0.2)',
                 borderRadius: '12px',
                 padding: '0.5rem',
-                minWidth: '240px',
-                boxShadow: '0 4px 20px rgba(86, 88, 245, 0.15)',
+                minWidth: '260px', // Increased width for better spacing
+                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)', // Softer shadow
                 zIndex: 1000,
                 animation: 'dropdownFade 0.2s ease'
               }}
             >
               <div style={{
-                padding: '1rem',
-                borderBottom: '1px solid rgba(86, 88, 245, 0.15)',
-                marginBottom: '0.5rem',
+                padding: '0.75rem 1rem', // Adjusted padding
                 display: 'flex',
                 alignItems: 'center',
                 gap: '1rem'
               }}>
                 <div style={{
-                  width: '48px',
-                  height: '48px',
+                  width: '40px', // Slightly smaller avatar
+                  height: '40px',
                   borderRadius: '50%',
                   background: planColors.gradient,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  fontSize: '20px',
+                  fontSize: '18px', // Adjusted font size
                   fontWeight: '600',
                   boxShadow: planColors.shadow,
-                  padding: 0,
+                  flexShrink: 0, // Prevent avatar from shrinking
                   position: 'relative'
                 }}>
                   {user?.full_name ? user.full_name[0].toUpperCase() : user?.email[0].toUpperCase()}
                   {planSymbol && (
                     <span style={{
                       position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      fontSize: '14px',
-                      background: 'rgba(0, 0, 0, 0.7)',
+                      top: '-2px',
+                      right: '-2px',
+                      fontSize: '12px',
+                      background: 'rgba(0, 0, 0, 0.8)',
                       borderRadius: '50%',
-                      width: '20px',
-                      height: '20px',
+                      width: '16px',
+                      height: '16px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      border: '2px solid #1a1c2a' // Add border to separate from avatar
                     }}>
                       {planSymbol}
                     </span>
                   )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{
                       fontWeight: 600,
                       color: '#fff',
                       fontSize: '1rem',
-                      background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
                     }}>
                       {user?.full_name || 'User'}
                     </span>
                     <span style={{
-                      padding: '0.15rem 0.7rem',
+                      padding: '0.15rem 0.5rem',
                       borderRadius: '999px',
-                      background: 'rgba(86, 88, 245, 0.10)',
-                      color: '#5658f5',
+                      background: 'rgba(86, 88, 245, 0.15)',
+                      color: '#8c8eff',
                       fontWeight: 600,
-                      fontSize: '0.8rem',
+                      fontSize: '0.75rem',
                       letterSpacing: '0.02em'
                     }}>
                       {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                     </span>
                   </div>
                   <div style={{ 
-                    fontSize: '0.85rem', 
-                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontSize: '0.8rem', // Smaller email font
+                    color: 'rgba(255, 255, 255, 0.5)', // More subtle color
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '160px'
+                    textOverflow: 'ellipsis'
                   }}>
                     {user?.email}
                   </div>
                 </div>
               </div>
 
-              {/* Usage Information section removed */}
-
+              <div style={{
+                borderTop: '1px solid rgba(86, 88, 245, 0.1)',
+                margin: '0.5rem 0',
+              }} />
+              
               <div style={{ padding: '0.25rem' }}>
                 <button
                   onClick={() => {
@@ -274,63 +275,35 @@ export function NavBar() {
                     setIsDropdownOpen(false);
                   }}
                   className="dropdown-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    background: 'none',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: 'rgba(255, 255, 255, 0.8)',
-                    fontSize: '0.9rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
                 >
-                  <span style={{ 
-                    fontSize: '1.1rem',
-                    background: 'rgba(86, 88, 245, 0.1)',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>👤</span>
+                  <span className="dropdown-item-icon">👤</span>
                   View Profile
                 </button>
+                
+                {currentPlan === 'free' && (
+                  <button
+                    onClick={() => {
+                      navigate('/pricing');
+                      setIsDropdownOpen(false);
+                    }}
+                    className="dropdown-item"
+                  >
+                    <span className="dropdown-item-icon" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>🚀</span>
+                    Upgrade Subscription
+                  </button>
+                )}
+
+                <div style={{
+                  borderTop: '1px solid rgba(86, 88, 245, 0.1)',
+                  margin: '0.25rem 0.75rem', // Inset separator
+                }} />
 
                 <button
                   onClick={() => setShowLogoutConfirm(true)}
                   className="dropdown-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    background: 'none',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#ef4444',
-                    fontSize: '0.9rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
                 >
-                  <span style={{ 
-                    fontSize: '1.1rem',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>🚪</span>
-                  Sign Out
+                  <span className="dropdown-item-icon" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>🚪</span>
+                  <span style={{ color: '#ef4444' }}>Sign Out</span>
                 </button>
               </div>
 
@@ -430,6 +403,34 @@ export function NavBar() {
       </div>
       
       <style>{`
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: none;
+          border: none;
+          border-radius: 8px;
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: left;
+        }
+        
+        .dropdown-item-icon {
+          font-size: 1.1rem;
+          background: rgba(86, 88, 245, 0.1);
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #8c8eff;
+        }
+
         @keyframes dropdownFade {
           from {
             opacity: 0;
@@ -462,6 +463,7 @@ export function NavBar() {
         
         .dropdown-item:hover {
           background: rgba(86, 88, 245, 0.1);
+          color: #fff;
         }
         
         .profile-menu {

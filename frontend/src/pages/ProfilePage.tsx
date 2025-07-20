@@ -239,51 +239,6 @@ export function ProfilePage() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '1rem'
             }}>
-              {/* Uploads Card */}
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                padding: '1.5rem',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
-                  opacity: 0.8
-                }} />
-                <h3 style={{ 
-                  color: 'rgba(255, 255, 255, 0.6)',
-                  fontSize: '0.9rem',
-                  margin: '0 0 0.5rem 0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <span>📄</span> Uploads Remaining
-                </h3>
-                <p style={{
-                  color: '#fff',
-                  fontSize: '2rem',
-                  margin: '0',
-                  fontWeight: '600',
-                  minHeight: '2rem', // Prevent layout shift
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  {isLoadingUsage ? (
-                    <div className="loading-spinner-large" />
-                  ) : (
-                    usageData?.remaining_uploads === -1 ? '∞' : usageData?.remaining_uploads ?? 'N/A'
-                  )}
-                </p>
-              </div>
               {/* Recordings Card */}
               <div style={{
                 background: 'rgba(255, 255, 255, 0.02)',
@@ -326,6 +281,51 @@ export function ProfilePage() {
                     <div className="loading-spinner-large" />
                   ) : (
                     usageData?.remaining_recordings === -1 ? '∞' : usageData?.remaining_recordings ?? 'N/A'
+                  )}
+                </p>
+              </div>
+              {/* Uploads Card */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                padding: '1.5rem',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
+                  opacity: 0.8
+                }} />
+                <h3 style={{ 
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontSize: '0.9rem',
+                  margin: '0 0 0.5rem 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span>📄</span> Uploads Remaining
+                </h3>
+                <p style={{
+                  color: '#fff',
+                  fontSize: '2rem',
+                  margin: '0',
+                  fontWeight: '600',
+                  minHeight: '2rem', // Prevent layout shift
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  {isLoadingUsage ? (
+                    <div className="loading-spinner-large" />
+                  ) : (
+                    usageData?.remaining_uploads === -1 ? '∞' : usageData?.remaining_uploads ?? 'N/A'
                   )}
                 </p>
               </div>

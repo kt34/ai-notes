@@ -113,8 +113,14 @@ export function UploadComponent() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      setFile(files[0]);
-      setError(null);
+      const selectedFile = files[0];
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError('File size exceeds 10MB limit. Please choose a smaller file.');
+        setFile(null);
+      } else {
+        setFile(selectedFile);
+        setError(null);
+      }
     }
   };
 
@@ -166,9 +172,15 @@ export function UploadComponent() {
         'text/plain',
         'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       ];
-      if (acceptedTypes.includes(files[0].type)) {
-        setFile(files[0]);
-        setError(null);
+      const droppedFile = files[0];
+      if (acceptedTypes.includes(droppedFile.type)) {
+        if (droppedFile.size > 10 * 1024 * 1024) {
+          setError('File size exceeds 10MB limit. Please choose a smaller file.');
+          setFile(null);
+        } else {
+          setFile(droppedFile);
+          setError(null);
+        }
       } else {
         setError('Unsupported file type. Please upload a DOC, DOCX, PDF, PPTX, or TXT file.');
       }
@@ -413,6 +425,9 @@ export function UploadComponent() {
               </label>
               <p style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '1rem' }}>
                 Supported formats: DOC, DOCX, PDF, PPTX, TXT
+              </p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                (Max 10MB file size. Only the first 15,000 words will be processed.)
               </p>
             </div>
             <div style={{ position: 'relative' }}>
