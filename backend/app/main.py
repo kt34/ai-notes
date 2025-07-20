@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, WebSocket, HTTPException, Depends, UploadFile, File, Form
+from fastapi import FastAPI, WebSocket, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from starlette.websockets import WebSocketDisconnect
@@ -20,7 +20,8 @@ from .user_usages import (
     update_usage_recordings, 
     get_remaining_uploads_count, 
     get_remaining_recordings_count,
-    get_usage_summary
+    get_usage_summary,
+    reset_user_usage
 )
 import asyncio
 import stripe # Added for Stripe integration
@@ -254,17 +255,33 @@ async def create_checkout_session(
     cancel_url = f"{settings.FRONTEND_URL}/profile?payment_status=cancelled"
 
     try:
+        # Check if user already has a stripe_customer_id
+        profile_response = supabase.table("profiles").select("stripe_customer_id").eq("id", current_user.id).single().execute()
+        customer_id = profile_response.data.get("stripe_customer_id")
+
+        if not customer_id:
+            # Create a new Stripe Customer
+            customer = stripe.Customer.create(
+                email=current_user.email,
+                name=current_user.user_metadata.get("full_name"),
+                metadata={"supabase_id": current_user.id}
+            )
+            customer_id = customer.id
+            # Save the new customer_id to the user's profile
+            supabase.table("profiles").update({"stripe_customer_id": customer_id}).eq("id", current_user.id).execute()
+
         checkout_session = stripe.checkout.Session.create(
+            customer=customer_id,
             line_items=[
                 {
                     'price': price_id,
                     'quantity': 1,
                 },
             ],
-            mode='subscription', # Assuming these are subscription prices
+            mode='subscription',
             success_url=success_url,
             cancel_url=cancel_url,
-            client_reference_id=current_user.id # Store user ID for webhook reconciliation
+            client_reference_id=current_user.id
         )
         return {"sessionId": checkout_session.id}
     except Exception as e:
@@ -310,9 +327,10 @@ async def update_subscription_after_payment(
         if not plan_type:
             raise HTTPException(status_code=400, detail="Could not determine plan type from session")
         
-        # Update the user's subscription status in the database
+        # Update the user's subscription status and customer ID in the database
         subscription_id = session.subscription
-        await update_usage_plan(current_user.id, plan_type, stripe_subscription_id=subscription_id)
+        customer_id = session.customer
+        await update_usage_plan(current_user.id, plan_type, stripe_subscription_id=subscription_id, stripe_customer_id=customer_id)
         
         return {
             "success": True,
@@ -350,6 +368,51 @@ async def cancel_subscription(current_user: SupabaseUser = Depends(get_authentic
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/stripe/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+    event = None
+
+    print(payload)
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        raise HTTPException(status_code=400, detail=str(e))
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Handle the event
+    if event['type'] == 'invoice.paid':
+        invoice = event['data']['object']
+        stripe_customer_id = invoice.get('customer')
+        stripe_subscription_id = invoice.get('subscription')
+
+        if stripe_customer_id:
+            try:
+                # Find the user with this customer ID
+                user_response = supabase.table("profiles").select("id").eq("stripe_customer_id", stripe_customer_id).single().execute()
+                
+                if user_response.data:
+                    user_id = user_response.data['id']
+                    # Reset their usage
+                    await reset_user_usage(user_id)
+                    print(f"Successfully reset usage for user {user_id} via customer ID {stripe_customer_id}")
+                else:
+                    print(f"Webhook received for unknown customer: {stripe_customer_id}")
+            except Exception as e:
+                print(f"Error processing 'invoice.paid' webhook: {e}")
+                # Return a 500 but don't crash the server, log the error for investigation
+                return {"status": "error", "message": "Internal server error"}
+
+    return {"status": "success"}
+
 
 @app.websocket("/ws/process-upload")
 async def websocket_process_upload(ws: WebSocket):

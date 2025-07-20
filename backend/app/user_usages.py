@@ -1,5 +1,6 @@
 from .db import supabase
 from fastapi import HTTPException, status, Depends
+from datetime import datetime, timedelta
 
 import asyncio
 
@@ -10,17 +11,43 @@ async def get_usage(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching usage: {e}")
 
-async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None):
+async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None, stripe_customer_id: str = None):
     try:
         update_data = {"subscription_status": updated_plan}
         if stripe_subscription_id:
             update_data["stripe_subscription_id"] = stripe_subscription_id
+        if stripe_customer_id:
+            update_data["stripe_customer_id"] = stripe_customer_id
 
         supabase.table("profiles").update(update_data).eq("id", user_id).execute()
         
         return {"success": True, "message": "Subscription updated", "updated_plan": updated_plan}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating usage: {e}")
+
+async def reset_user_usage(user_id: str):
+    """Resets usage counts and updates the billing period for a user."""
+    try:
+        now = datetime.utcnow()
+        new_period_end = now + timedelta(days=30) # Simple 30-day cycle
+
+        update_data = {
+            "uploads_count": 0,
+            "recordings_count": 0,
+            "usage_period_start": now.isoformat(),
+            "usage_period_end": new_period_end.isoformat()
+        }
+        
+        supabase.table("user_usage").update(update_data).eq("user_id", user_id).execute()
+        
+        return {"success": True, "message": "User usage has been reset."}
+    except Exception as e:
+        # It's better to log this error than to raise an HTTPException,
+        # as Stripe webhook responses are critical.
+        print(f"CRITICAL: Failed to reset usage for user {user_id}. Error: {e}")
+        # Re-raising for now, but in production, you might want more robust error handling.
+        raise HTTPException(status_code=500, detail=f"Failed to reset user usage: {e}")
+
 
 async def update_usage_uploads(user_id: str):
     try:
