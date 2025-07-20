@@ -8,7 +8,7 @@ interface SubscriptionData {
 }
 
 export function NavBar() {
-  const { user, logout, token } = useAuth();
+  const { user, logout, token, setNavBarRefreshFunction } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -18,19 +18,24 @@ export function NavBar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch subscription data
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!token) return;
-      try {
-        const data = await apiRequest('/usage/plan', { token });
-        setSubscriptionData(data);
-      } catch (error) {
-        console.error('Error fetching subscription:', error);
-      }
-    };
+  const fetchSubscription = async () => {
+    if (!token) return;
+    try {
+      const data = await apiRequest('/usage/plan', { token });
+      setSubscriptionData(data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchSubscription();
   }, [token]);
+
+  // Register refresh function with AuthContext
+  useEffect(() => {
+    setNavBarRefreshFunction(fetchSubscription);
+  }, [setNavBarRefreshFunction]);
 
   // Helper functions for plan-specific styling
   const getPlanColors = () => {

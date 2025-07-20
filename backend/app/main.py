@@ -311,7 +311,8 @@ async def update_subscription_after_payment(
             raise HTTPException(status_code=400, detail="Could not determine plan type from session")
         
         # Update the user's subscription status in the database
-        await update_usage_plan(current_user.id, plan_type)
+        subscription_id = session.subscription
+        await update_usage_plan(current_user.id, plan_type, stripe_subscription_id=subscription_id)
         
         return {
             "success": True,
@@ -320,6 +321,32 @@ async def update_subscription_after_payment(
         }
         
     except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/stripe/cancel-subscription")
+async def cancel_subscription(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    """Cancels the user's active Stripe subscription."""
+    try:
+        # 1. Get the user's stripe_subscription_id from your database
+        profile_response = supabase.table("profiles").select("stripe_subscription_id").eq("id", current_user.id).single().execute()
+        if not profile_response.data or not profile_response.data.get("stripe_subscription_id"):
+            raise HTTPException(status_code=404, detail="No active subscription found to cancel.")
+        
+        stripe_subscription_id = profile_response.data["stripe_subscription_id"]
+
+        # 2. Use the Stripe API to cancel the subscription
+        # This immediately cancels the subscription. For "cancel at period end", use `stripe.Subscription.modify`.
+        canceled_subscription = stripe.Subscription.delete(stripe_subscription_id)
+
+        # 3. Update the user's plan in your database to 'free'
+        await update_usage_plan(current_user.id, "free")
+        
+        return {"success": True, "message": "Your subscription has been successfully canceled."}
+    
+    except stripe.error.StripeError as e:
+        # Handle specific Stripe errors (e.g., subscription already canceled)
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

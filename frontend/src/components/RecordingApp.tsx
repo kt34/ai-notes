@@ -404,13 +404,13 @@ export function RecordingApp({}: RecordingAppProps) {
         padding: '0rem 1.5rem'
       }}>
         <div style={{ position: 'relative', marginBottom: '1rem' }}>
-          <h1 style={{ 
+        <h1 style={{ 
             textAlign: 'center',
             margin: 0,
             padding: '0.5rem 0',
-            fontSize: 'clamp(2rem, 4vw, 2.5rem)',
-            color: '#fff',
-            fontWeight: '700'
+          fontSize: 'clamp(2rem, 4vw, 2.5rem)',
+          color: '#fff',
+          fontWeight: '700'
           }}>
             Record Live
           </h1>

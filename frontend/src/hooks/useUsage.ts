@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,29 +14,32 @@ export const useUsage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUsage = async () => {
-      if (!token) return;
+  const fetchUsage = useCallback(async () => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
 
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await apiRequest('/usage/summary', { token });
-        setUsageData({
-          remaining_uploads: data.remaining_uploads,
-          remaining_recordings: data.remaining_recordings,
-          usage_period_end: data.usage_period_end
-        });
-      } catch (err) {
-        setError('Failed to fetch usage data.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUsage();
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await apiRequest('/usage/summary', { token });
+      setUsageData({
+        remaining_uploads: data.remaining_uploads,
+        remaining_recordings: data.remaining_recordings,
+        usage_period_end: data.usage_period_end
+      });
+    } catch (err) {
+      setError('Failed to fetch usage data.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [token]);
 
-  return { usageData, isLoading, error };
+  useEffect(() => {
+    fetchUsage();
+  }, [fetchUsage]);
+
+  return { usageData, isLoading, error, refetch: fetchUsage };
 }; 

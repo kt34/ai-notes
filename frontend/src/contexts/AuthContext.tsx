@@ -7,6 +7,7 @@ interface User {
   id: string;
   email: string;
   full_name?: string;
+  avatar_url?: string;
   subscription_status?: string;
 }
 
@@ -21,6 +22,8 @@ interface AuthContextType {
   clearError: () => void;
   updatePassword: (newPassword: string) => Promise<void>;
   refreshUser: () => Promise<void>;
+  refreshNavBar: () => void;
+  setNavBarRefreshFunction: (fn: () => void) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [navBarRefreshFunction, setNavBarRefreshFunction] = useState<(() => void) | null>(null);
 
   // Initialize auth state from localStorage
   useEffect(() => {
@@ -212,19 +216,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     const currentToken = localStorage.getItem('token');
-    if (currentToken) {
-      try {
-        const userData = await fetchUser(currentToken);
-        if (userData) {
-          setUser(userData);
-        }
-      } catch (err) {
-        console.error("Failed to refresh user:", err);
-      }
+    if (!currentToken) return;
+
+    try {
+      const userData = await apiRequest('/auth/me', { token: currentToken });
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
     }
-  };
+  }, []);
+
+  const refreshNavBar = useCallback(() => {
+    if (navBarRefreshFunction) {
+      navBarRefreshFunction();
+    }
+  }, [navBarRefreshFunction]);
+
+  const setNavBarRefreshFunctionWrapper = useCallback((fn: () => void) => {
+    setNavBarRefreshFunction(() => fn);
+  }, []);
 
   return (
     <AuthContext.Provider value={{
@@ -237,7 +249,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       clearError,
       updatePassword,
-      refreshUser
+      refreshUser,
+      refreshNavBar,
+      setNavBarRefreshFunction: setNavBarRefreshFunctionWrapper
     }}>
       {children}
     </AuthContext.Provider>

@@ -10,9 +10,14 @@ async def get_usage(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching usage: {e}")
 
-async def update_usage_plan(user_id: str, updated_plan: str):
+async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None):
     try:
-        supabase.table("profiles").update({"subscription_status": updated_plan}).eq("id", user_id).execute()
+        update_data = {"subscription_status": updated_plan}
+        if stripe_subscription_id:
+            update_data["stripe_subscription_id"] = stripe_subscription_id
+
+        supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+        
         return {"success": True, "message": "Subscription updated", "updated_plan": updated_plan}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating usage: {e}")
