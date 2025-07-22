@@ -90,7 +90,7 @@ export function PricingPage() {
   ];
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '2  rem auto', padding: '0rem' }}>
+    <div style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 2rem' }}>
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3rem)', color: '#fff', marginBottom: '0.5rem' }}>
           Choose Your Plan
@@ -133,7 +133,7 @@ export function PricingPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'stretch' }}>
         {plans.map((plan) => (
           <div 
             key={plan.id} 
@@ -146,56 +146,56 @@ export function PricingPage() {
               backdropFilter: 'blur(5px)',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
               transition: 'transform 0.3s ease, box-shadow 0.3s ease',
               transform: hoveredPlan === plan.id ? 'translateY(-5px)' : 'translateY(0)',
             }}
             onMouseEnter={() => setHoveredPlan(plan.id)}
             onMouseLeave={() => setHoveredPlan(null)}
           >
-            <div>
+            <div style={{ flex: '1 0 auto' }}>
               <h3 style={{ color: '#fff', fontSize: '1.7rem', margin: '0 0 0.75rem 0', fontWeight: '600' }}>{plan.name}</h3>
-              <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1rem', marginBottom: '1.5rem', minHeight: '60px' }}>{plan.description}</p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1rem', marginBottom: '1.5rem', minHeight: '80px' }}>{plan.description}</p>
               <p style={{ color: '#fff', fontSize: '2.5rem', fontWeight: 'bold', margin: '0 0 1.5rem 0' }}>
                 {plan.price.split('/')[0]}
                 <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)' }}>/mo</span>
               </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem 0' }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem 0', flex: '1 0 auto' }}>
                 {plan.features.map(feature => (
-                  <li key={feature} style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ color: '#5658f5', marginRight: '0.75rem', fontSize: '1.2rem' }}>✓</span>
-                    {feature}
+                  <li key={feature} style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#5658f5', marginRight: '0.75rem', fontSize: '1.2rem', lineHeight: '1.2rem' }}>✓</span>
+                    <span style={{ flex: 1 }}>{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <button
-              onClick={() => handleCheckout(plan.id)}
-              disabled={!stripePromise || !!isCheckingOutPlan}
-              style={{
-                padding: '1rem 1.5rem',
-                background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '1.1rem',
-                fontWeight: 'bold',
-                cursor: (!stripePromise || !!isCheckingOutPlan) ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                opacity: (!stripePromise || !!isCheckingOutPlan) ? 0.6 : 1,
-                width: '100%',
-                marginTop: 'auto'
-              }}
-            >
-              {isCheckingOutPlan === plan.id ? (
-                <>
-                  <span className="loading-spinner-small" style={{marginRight: '8px'}}></span>
-                  Processing...
-                </>
-              ) : (
-                'Choose Plan'
-              )}
-            </button>
+            <div style={{ marginTop: 'auto' }}>
+              <button
+                onClick={() => handleCheckout(plan.id)}
+                disabled={!stripePromise || !!isCheckingOutPlan}
+                style={{
+                  padding: '1rem 1.5rem',
+                  background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  cursor: (!stripePromise || !!isCheckingOutPlan) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: (!stripePromise || !!isCheckingOutPlan) ? 0.6 : 1,
+                  width: '100%',
+                }}
+              >
+                {isCheckingOutPlan === plan.id ? (
+                  <>
+                    <span className="loading-spinner-small" style={{marginRight: '8px'}}></span>
+                    Processing...
+                  </>
+                ) : (
+                  'Choose Plan'
+                )}
+              </button>
+            </div>
           </div>
         ))}
       </div>

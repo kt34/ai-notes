@@ -14,6 +14,9 @@ export function LandingPage() {
   const featuresTitleRef = useRef<HTMLHeadingElement>(null);
   const featuresGridRef = useRef<HTMLDivElement>(null);
 
+  const pricingTitleRef = useRef<HTMLHeadingElement>(null);
+  const pricingGridRef = useRef<HTMLDivElement>(null);
+
   const ctaTitleRef = useRef<HTMLHeadingElement>(null);
   const ctaPRef = useRef<HTMLParagraphElement>(null);
   const ctaButtonRef = useRef<HTMLDivElement>(null);
@@ -25,6 +28,9 @@ export function LandingPage() {
 
   const isFeaturesTitleVisible = useIntersectionObserver(featuresTitleRef, { threshold: 0.1 });
   const isFeaturesGridVisible = useIntersectionObserver(featuresGridRef, { threshold: 0.1 });
+
+  const isPricingTitleVisible = useIntersectionObserver(pricingTitleRef, { threshold: 0.1 });
+  const isPricingGridVisible = useIntersectionObserver(pricingGridRef, { threshold: 0.1 });
 
   const isCtaTitleVisible = useIntersectionObserver(ctaTitleRef, { threshold: 0.1 });
   const isCtaPVisible = useIntersectionObserver(ctaPRef, { threshold: 0.1 });
@@ -270,6 +276,81 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section style={{
+        padding: '4rem 2rem',
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.02), rgba(86, 88, 245, 0.05))'
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          width: '100%',
+          margin: '0 auto',
+        }}>
+          <h2 
+            ref={pricingTitleRef}
+            className={`fade-in-on-scroll ${isPricingTitleVisible ? 'is-visible' : ''}`}
+            style={{
+              fontSize: 'clamp(2.5rem, 4.5vw, 3.2rem)',
+              textAlign: 'center',
+              marginBottom: '1rem',
+              background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Simple Pricing
+          </h2>
+          <p style={{
+            fontSize: '1.2rem',
+            color: 'rgba(255, 255, 255, 0.7)',
+            textAlign: 'center',
+            marginBottom: '3rem',
+            maxWidth: '600px',
+            margin: '0 auto 3rem auto'
+          }}>
+            Choose the plan that fits your needs. All plans come with a satisfaction guarantee.
+          </p>
+
+          <div 
+            ref={pricingGridRef}
+            className={`stagger-children ${isPricingGridVisible ? 'is-visible' : ''}`}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '2rem',
+              width: '100%',
+              alignItems: 'stretch',
+            }}
+          >
+            <div style={{ transitionDelay: '0.1s' }}>
+              <PricingCard 
+                name="Plus Plan"
+                price="$10"
+                period="/mo"
+                features={['10 hours transcription/month', 'Standard AI summaries', 'Email support']}
+              />
+            </div>
+            <div style={{ transitionDelay: '0.2s' }}>
+              <PricingCard 
+                name="Pro Plan"
+                price="$20"
+                period="/mo"
+                features={['30 hours transcription/month', 'Detailed AI summaries', 'Priority support']}
+                isPopular={true}
+              />
+            </div>
+            <div style={{ transitionDelay: '0.3s' }}>
+              <PricingCard 
+                name="Max Plan"
+                price="$30"
+                period="/mo"
+                features={['Unlimited transcription', 'Advanced analytics', 'Dedicated support']}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section style={{
         padding: '6rem 2rem',
@@ -344,6 +425,100 @@ export function LandingPage() {
         <p>&copy; {new Date().getFullYear()} notez.ai. All rights reserved.</p>
       </footer>
 
+    </div>
+  );
+}
+
+function PricingCard({ name, price, period, features, isPopular = false }: { 
+  name: string; 
+  price: string; 
+  period: string; 
+  features: string[];
+  isPopular?: boolean;
+}) {
+  return (
+    <div style={{
+      background: isPopular ? 'linear-gradient(135deg, rgba(86, 88, 245, 0.1), rgba(140, 142, 255, 0.1))' : 'rgba(255, 255, 255, 0.05)',
+      padding: '2rem',
+      borderRadius: '12px',
+      border: isPopular ? '1px solid rgba(86, 88, 245, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+      boxShadow: isPopular ? '0 8px 25px rgba(86, 88, 245, 0.2)' : '0 4px 15px rgba(0, 0, 0, 0.1)',
+      transition: 'all 0.3s ease',
+      height: '100%',
+      position: 'relative'
+    }} 
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-5px)';
+      e.currentTarget.style.boxShadow = isPopular ? '0 12px 35px rgba(86, 88, 245, 0.3)' : '0 8px 25px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = isPopular ? '0 8px 25px rgba(86, 88, 245, 0.2)' : '0 4px 15px rgba(0, 0, 0, 0.1)';
+    }}
+    >
+      {isPopular && (
+        <div style={{
+          position: 'absolute',
+          top: '-0.5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+          color: 'white',
+          padding: '0.25rem 1rem',
+          borderRadius: '20px',
+          fontSize: '0.8rem',
+          fontWeight: '600'
+        }}>
+          Most Popular
+        </div>
+      )}
+      <h3 style={{ 
+        fontSize: '2rem', 
+        marginBottom: '0.5rem', 
+        color: '#fff',
+        textAlign: 'center'
+      }}>
+        {name}
+      </h3>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <span style={{ 
+          fontSize: '2.5rem', 
+          fontWeight: 'bold', 
+          color: '#fff' 
+        }}>
+          {price}
+        </span>
+        <span style={{ 
+          fontSize: '1rem', 
+          color: 'rgba(255, 255, 255, 0.6)' 
+        }}>
+          {period}
+        </span>
+      </div>
+      <ul style={{ 
+        listStyle: 'none', 
+        padding: 0, 
+        margin: 0
+      }}>
+        {features.map((feature, index) => (
+          <li key={index} style={{ 
+            color: 'rgba(255,255,255,0.8)', 
+            marginBottom: '0.75rem', 
+            display: 'flex', 
+            alignItems: 'center',
+            fontSize: '0.95rem'
+          }}>
+            <span style={{ 
+              color: '#5658f5', 
+              marginRight: '0.75rem', 
+              fontSize: '1rem' 
+            }}>
+              ✓
+            </span>
+            {feature}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
