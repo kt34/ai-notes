@@ -302,11 +302,13 @@ async def update_subscription_after_payment(
         # Retrieve the checkout session from Stripe to verify payment
         session = stripe.checkout.Session.retrieve(
             request_data.session_id,
-            expand=["line_items"]
+            expand=["line_items", "subscription"]
         )
 
         print("Session is " + str(session))
         
+        print("Session Subscription is: " + str(session.subscription))
+
         if session.payment_status != 'paid':
             raise HTTPException(status_code=400, detail="Payment not completed")
         
@@ -330,7 +332,24 @@ async def update_subscription_after_payment(
         # Update the user's subscription status and customer ID in the database
         subscription_id = session.subscription
         customer_id = session.customer
-        await update_usage_plan(current_user.id, plan_type, stripe_subscription_id=subscription_id, stripe_customer_id=customer_id)
+
+        subscription = session.subscription
+        subscription_id = subscription.id
+
+        print("Subscription ID is: " + str(subscription_id))
+
+        print("Subscription Itmes is: " + str(subscription['items']))
+        print("Subscription data is: " + str(subscription['items'].data[0]))
+        print("Subscription data start date is: " + str(subscription['items'].data[0].current_period_start))
+        print("Subscription data end date is: " + str(subscription['items'].data[0].current_period_end))
+        
+        start_date = subscription['items'].data[0].current_period_start
+        end_date = subscription['items'].data[0].current_period_end
+
+        print("Start Date: " + str(start_date))
+        print("End Date: " + str(end_date))
+
+        await update_usage_plan(current_user.id, plan_type, stripe_subscription_id=subscription_id, stripe_customer_id=customer_id, start_date=start_date, end_date=end_date)
         
         return {
             "success": True,

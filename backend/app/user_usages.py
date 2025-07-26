@@ -1,6 +1,6 @@
 from .db import supabase
 from fastapi import HTTPException, status, Depends
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import asyncio
 
@@ -11,7 +11,7 @@ async def get_usage(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching usage: {e}")
 
-async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None, stripe_customer_id: str = None):
+async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None, stripe_customer_id: str = None, start_date: int = None, end_date: int = None):
     try:
         update_data = {"subscription_status": updated_plan}
         if stripe_subscription_id:
@@ -19,8 +19,27 @@ async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription
         if stripe_customer_id:
             update_data["stripe_customer_id"] = stripe_customer_id
 
+        # first update the profiles table
+        print("Trying to update the profiles tab")
         supabase.table("profiles").update(update_data).eq("id", user_id).execute()
-        
+        print("Successfully updated")
+
+        # After we need to update the user usages table
+        print(type(start_date))
+        print(type(end_date))
+
+        if updated_plan != "free":
+            start_date_dt = datetime.fromtimestamp(start_date, tz=timezone.utc)
+            end_date_dt = datetime.fromtimestamp(end_date, tz=timezone.utc)
+
+            print(start_date_dt)
+            print(end_date_dt)
+
+            supabase.table("user_usage").update({"usage_period_start": start_date_dt.isoformat(), "usage_period_end": end_date_dt.isoformat()}).eq("user_id", user_id).execute()
+        else:
+            current_time = datetime.now(timezone.utc)
+            supabase.table("user_usage").update({"usage_period_start": current_time.isoformat(), "usage_period_end": "infinity"}).eq("user_id", user_id).execute()
+            
         return {"success": True, "message": "Subscription updated", "updated_plan": updated_plan}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating usage: {e}")
