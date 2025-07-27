@@ -44,17 +44,17 @@ async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating usage: {e}")
 
-async def reset_user_usage(user_id: str):
+async def reset_user_usage(user_id: str, start_date:int = None, end_date: int = None):
     """Resets usage counts and updates the billing period for a user."""
     try:
-        now = datetime.utcnow()
-        new_period_end = now + timedelta(days=30) # Simple 30-day cycle
+        start_date_dt = datetime.fromtimestamp(start_date, tz=timezone.utc)
+        end_date_dt = datetime.fromtimestamp(end_date, tz=timezone.utc)
 
         update_data = {
             "uploads_count": 0,
             "recordings_count": 0,
-            "usage_period_start": now.isoformat(),
-            "usage_period_end": new_period_end.isoformat()
+            "usage_period_start": start_date_dt.isoformat(),
+            "usage_period_end": end_date_dt.isoformat()
         }
         
         supabase.table("user_usage").update(update_data).eq("user_id", user_id).execute()

@@ -373,13 +373,13 @@ async def cancel_subscription(current_user: SupabaseUser = Depends(get_authentic
         
         stripe_subscription_id = profile_response.data["stripe_subscription_id"]
 
-        # 2. Use the Stripe API to cancel the subscription
-        # This immediately cancels the subscription. For "cancel at period end", use `stripe.Subscription.modify`.
-        canceled_subscription = stripe.Subscription.delete(stripe_subscription_id)
 
-        # 3. Update the user's plan in your database to 'free'
-        await update_usage_plan(current_user.id, "free")
-        
+        # So now we will set the stripe logic, to instead update the subscription to cancel at the period end time
+        stripe.Subscription.modify(
+            stripe_subscription_id,
+            cancel_at_period_end=True
+        )
+
         return {"success": True, "message": "Your subscription has been successfully canceled."}
     
     except stripe.error.StripeError as e:
@@ -410,26 +410,60 @@ async def stripe_webhook(request: Request):
     # Handle the event
     if event['type'] == 'invoice.paid':
         invoice = event['data']['object']
-        stripe_customer_id = invoice.get('customer')
-        stripe_subscription_id = invoice.get('subscription')
+
+        print("Invoice is: " + str(invoice))
+
+        if invoice.billing_reason == 'subscription_cycle':
+            print("Subscription Payment Invoice Received")
+            stripe_customer_id = invoice.get('customer')
+
+            if stripe_customer_id:
+                try:
+                    # Find the user with this customer ID
+                    user_response = supabase.table("profiles").select("id").eq("stripe_customer_id", stripe_customer_id).single().execute()
+                    
+                    line_item = invoice['lines']['data'][0]
+                    start_date = line_item['period']['start']
+                    end_date = line_item['period']['end']
+
+                    print("Start Time is: " + str(start_date))
+                    print("End Time is: " + str(end_date))
+
+                    if user_response.data:
+                        user_id = user_response.data['id']
+                        # Reset their usage
+                        await reset_user_usage(user_id, start_date=start_date, end_date=end_date)
+                        print(f"Successfully reset usage for user {user_id} via customer ID {stripe_customer_id}")
+                    else:
+                        print(f"Webhook received for unknown customer: {stripe_customer_id}")
+                except Exception as e:
+                    print(f"Error processing 'invoice.paid' webhook: {e}")
+                    # Return a 500 but don't crash the server, log the error for investigation
+                    return {"status": "error", "message": "Internal server error"}
+    elif event['type'] == 'customer.subscription.deleted':
+        print("Subscription Deleted")
+        subscription = event['data']['object']
+        stripe_customer_id = subscription.get('customer')
 
         if stripe_customer_id:
             try:
-                # Find the user with this customer ID
                 user_response = supabase.table("profiles").select("id").eq("stripe_customer_id", stripe_customer_id).single().execute()
-                
+
                 if user_response.data:
                     user_id = user_response.data['id']
-                    # Reset their usage
-                    await reset_user_usage(user_id)
-                    print(f"Successfully reset usage for user {user_id} via customer ID {stripe_customer_id}")
-                else:
-                    print(f"Webhook received for unknown customer: {stripe_customer_id}")
-            except Exception as e:
-                print(f"Error processing 'invoice.paid' webhook: {e}")
-                # Return a 500 but don't crash the server, log the error for investigation
-                return {"status": "error", "message": "Internal server error"}
+                    print(f"Subscription for user {user_id}, has ended. Downgrading to free plan.")
 
+                    await update_usage_plan(
+                        user_id=user_id,
+                        updated_plan="free",
+                        stripe_subscription_id=""
+                    )
+                else:
+                    print(f"Webhook received 'customer.subscription.deleted' for unknown customer: {stripe_customer_id}")
+            except Exception as e:
+                print(f"Error processing 'customer.subscription.deleted' webhook: {e}")
+                return {"status": "error", "message": "Internal server error"}
+                
     return {"status": "success"}
 
 
