@@ -11,13 +11,15 @@ async def get_usage(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching usage: {e}")
 
-async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None, stripe_customer_id: str = None, start_date: int = None, end_date: int = None):
+async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None, stripe_customer_id: str = None, start_date: int = None, end_date: int = None, is_cancelled: bool = None):
     try:
         update_data = {"subscription_status": updated_plan}
         if stripe_subscription_id:
             update_data["stripe_subscription_id"] = stripe_subscription_id
         if stripe_customer_id:
             update_data["stripe_customer_id"] = stripe_customer_id
+        if is_cancalled is not None:
+            update_data["is_cancelled"] = is_cancelled
 
         # first update the profiles table
         print("Trying to update the profiles tab")

@@ -9,6 +9,7 @@ interface User {
   full_name?: string;
   avatar_url?: string;
   subscription_status?: string;
+  is_cancelled?: boolean;
 }
 
 interface AuthContextType {

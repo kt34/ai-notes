@@ -6,6 +6,7 @@ import { apiRequest } from '../utils/api';
 
 export function ProfilePage() {
   const { user, logout, refreshUser, refreshNavBar, token } = useAuth();
+  console.log(user);
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -409,11 +410,17 @@ export function ProfilePage() {
                   Status: Active
                 </p>
                 {user?.subscription_status !== 'free' && usageData?.usage_period_end && (
-                  <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>
-                    Renews on: {new Date(usageData.usage_period_end).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' })}
-                  </p>
+                  user?.is_cancelled ? (
+                    <p style={{ color: '#f59e0b', margin: '0', fontSize: '0.9rem' }}>
+                      Your plan will be cancelled on: {new Date(usageData.usage_period_end).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  ) : (
+                    <p style={{ color: 'rgba(255, 255, 255, 0.6)', margin: '0', fontSize: '0.9rem' }}>
+                      Renews on: {new Date(usageData.usage_period_end).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  )
                 )}
-                {user?.subscription_status !== 'free' && (
+                {user?.subscription_status !== 'free' && !user?.is_cancelled && (
                   <button
                     onClick={() => setShowCancelConfirm(true)}
                     style={{

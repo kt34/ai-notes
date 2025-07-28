@@ -79,6 +79,7 @@ class UserProfileResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     subscription_status: Optional[str] = None
+    is_cancelled: Optional[bool] = False
     
 
 @app.get("/auth/me", response_model=UserProfileResponse) # Assuming SupabaseUser is the model for the user object
@@ -95,7 +96,8 @@ async def read_users_me(current_user: SupabaseUser = Depends(get_authenticated_u
             id=current_user.id,
             email=current_user.email,
             full_name=profile_data.get('full_name'),
-            subscription_status=profile_data.get('subscription_status')
+            subscription_status=profile_data.get('subscription_status'),
+            is_cancelled=profile_data.get('is_cancelled', False)
             # map other fields here...
         )
     except Exception as e:
@@ -380,6 +382,8 @@ async def cancel_subscription(current_user: SupabaseUser = Depends(get_authentic
             cancel_at_period_end=True
         )
 
+        supabase.table("profiles").update({"is_cancelled": True}).eq("id", current_user.id).execute()
+
         return {"success": True, "message": "Your subscription has been successfully canceled."}
     
     except stripe.error.StripeError as e:
@@ -520,7 +524,8 @@ async def stripe_webhook(request: Request):
                     await update_usage_plan(
                         user_id=user_id,
                         updated_plan="free",
-                        stripe_subscription_id=""
+                        stripe_subscription_id="",
+                        is_cancelled=False
                     )
                 else:
                     print(f"Webhook received 'customer.subscription.deleted' for unknown customer: {stripe_customer_id}")
