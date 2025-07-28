@@ -23,6 +23,7 @@ from .user_usages import (
     get_usage_summary,
     reset_user_usage
 )
+from .email_service import send_payment_failure_email
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
@@ -440,6 +441,13 @@ async def stripe_webhook(request: Request):
                     print(f"Error processing 'invoice.paid' webhook: {e}")
                     # Return a 500 but don't crash the server, log the error for investigation
                     return {"status": "error", "message": "Internal server error"}
+    elif event['type'] == 'invoice.payment_failed':
+        invoice = event['data']['object']
+        stripe_customer_id = invoice.get('customer')
+
+        print("Invoice Payment Failed")
+        print("Stripe has just sent a new email to the user, if they don't update their payment, it will automatically be cancelled in 1 week, until then it will try again 4 times")
+
     elif event['type'] == 'customer.subscription.deleted':
         print("Subscription Deleted")
         subscription = event['data']['object']
@@ -463,7 +471,7 @@ async def stripe_webhook(request: Request):
             except Exception as e:
                 print(f"Error processing 'customer.subscription.deleted' webhook: {e}")
                 return {"status": "error", "message": "Internal server error"}
-                
+
     return {"status": "success"}
 
 
