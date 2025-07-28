@@ -41,6 +41,7 @@ export function ProfilePage() {
           console.error("Failed to update subscription:", error);
           setPaymentStatusMessage('Your payment was successful, but there was an error updating your account. Please contact support.');
         } finally {
+          setIsUpdatingSubscription(false);
           navigate(location.pathname, { replace: true });
         }
       };
@@ -81,6 +82,26 @@ export function ProfilePage() {
       setCancelError(err.message || 'Failed to cancel subscription. Please contact support.');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setIsUpdatingSubscription(true);
+    setPaymentStatusMessage('Redirecting to your subscription portal...');
+    try {
+      const response = await apiRequest('/api/v1/stripe/create-portal-session', {
+        method: 'POST',
+        token,
+      });
+      if (response.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error('Could not retrieve the subscription management portal link.');
+      }
+    } catch (error: any) {
+      console.error('Failed to create portal session:', error);
+      setPaymentStatusMessage(`Error: ${error.message || 'Could not open the subscription portal.'}`);
+      setIsUpdatingSubscription(false);
     }
   };
 
@@ -419,7 +440,14 @@ export function ProfilePage() {
                 )}
               </div>
               <button
-                onClick={() => navigate('/pricing')}
+                onClick={() => {
+                  if (user?.subscription_status === 'free') {
+                    navigate('/pricing');
+                  } else {
+                    handleManageSubscription();
+                  }
+                }}
+                disabled={isUpdatingSubscription}
                 style={{
                   padding: '0.75rem 1.5rem',
                   background: 'linear-gradient(135deg, #5658f5 0%, #8c8eff 100%)',
@@ -430,10 +458,15 @@ export function ProfilePage() {
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  opacity: isUpdatingSubscription ? 0.7 : 1,
                 }}
               >
-                {user?.subscription_status === 'free' ? 'Upgrade Plan' : 'Manage Plan'}
+                {isUpdatingSubscription && user?.subscription_status !== 'free'
+                  ? 'Redirecting...'
+                  : user?.subscription_status === 'free'
+                  ? 'Upgrade Plan'
+                  : 'Manage Plan'}
               </button>
             </div>
           </div>

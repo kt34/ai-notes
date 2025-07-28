@@ -23,7 +23,6 @@ from .user_usages import (
     get_usage_summary,
     reset_user_usage
 )
-from .email_service import send_payment_failure_email
 import asyncio
 import stripe # Added for Stripe integration
 from pydantic import BaseModel # Added for request body model
@@ -389,6 +388,38 @@ async def cancel_subscription(current_user: SupabaseUser = Depends(get_authentic
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/v1/stripe/create-portal-session")
+async def create_portal_session(current_user: SupabaseUser = Depends(get_authenticated_user_from_header)):
+    """
+    Creates a Stripe Customer Portal session for the current user, allowing them to manage their subscription.
+    """
+    try:
+        # Get the user's Stripe Customer ID from your database
+        profile_response = supabase.table("profiles").select("stripe_customer_id").eq("id", current_user.id).single().execute()
+        
+        if not profile_response.data or not profile_response.data.get("stripe_customer_id"):
+            raise HTTPException(status_code=404, detail="Stripe customer not found for this user.")
+            
+        customer_id = profile_response.data["stripe_customer_id"]
+
+        # Define where Stripe should send the user back to after they're done in the portal
+        return_url = f"{settings.FRONTEND_URL}/profile"
+
+        # Create the Portal Session
+        portal_session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url
+        )
+        
+        # Return the one-time-use URL to the frontend
+        return {"url": portal_session.url}
+
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+
 @app.post("/api/v1/stripe/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
@@ -448,6 +479,31 @@ async def stripe_webhook(request: Request):
         print("Invoice Payment Failed")
         print("Stripe has just sent a new email to the user, if they don't update their payment, it will automatically be cancelled in 1 week, until then it will try again 4 times")
 
+    elif event['type'] == 'customer.subscription.updated':
+        subscription = event['data']['object']
+        stripe_customer_id = subscription.get('customer')
+        
+        if stripe_customer_id:
+            try:
+                # Find the user in your database
+                user_response = supabase.table("profiles").select("id").eq("stripe_customer_id", stripe_customer_id).single().execute()
+                if user_response.data:
+                    user_id = user_response.data['id']
+                    
+                    # Determine the new plan type from the subscription data
+                    price_id = subscription['items']['data'][0]['price']['id']
+                    plan_type = "free" # Default
+                    if price_id == settings.STRIPE_PRICE_PLUS: plan_type = "plus"
+                    elif price_id == settings.STRIPE_PRICE_PRO: plan_type = "pro"
+                    elif price_id == settings.STRIPE_PRICE_MAX: plan_type = "max"
+                    
+                    # Update the user's plan in your database
+                    await update_usage_plan(user_id, plan_type)
+                    print(f"✅ Successfully updated plan to '{plan_type}' for user {user_id}")
+
+            except Exception as e:
+                print(f"❌ Error processing 'customer.subscription.updated' webhook: {e}")
+                return {"status": "error"}
     elif event['type'] == 'customer.subscription.deleted':
         print("Subscription Deleted")
         subscription = event['data']['object']
