@@ -18,7 +18,7 @@ async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription
             update_data["stripe_subscription_id"] = stripe_subscription_id
         if stripe_customer_id:
             update_data["stripe_customer_id"] = stripe_customer_id
-        if is_cancalled is not None:
+        if is_cancelled is not None:
             update_data["is_cancelled"] = is_cancelled
 
         # first update the profiles table
