@@ -13,6 +13,7 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { PricingPage } from './pages/PricingPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { NavBar } from './components/NavBar';
 import { ScrollToTop } from './components/ScrollToTop';
 import './App.css';
@@ -94,6 +95,7 @@ function App() {
             <PricingPage />
           </ProtectedRoute>
         } />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         {/* Catch-all route for unmatched paths */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

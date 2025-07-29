@@ -19,6 +19,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, full_name?: string) => Promise<{ success: boolean; message: string }>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   updatePassword: (newPassword: string) => Promise<void>;
@@ -79,6 +80,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initializeAuth();
+  }, []);
+
+  // Handle OAuth callbacks
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      if (!supabase) return;
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('OAuth callback error:', error);
+          setError(error.message);
+          return;
+        }
+
+        if (data.session) {
+          // User is authenticated via OAuth
+          const { access_token, refresh_token } = data.session;
+          
+          localStorage.setItem('token', access_token);
+          localStorage.setItem('refreshToken', refresh_token);
+          setToken(access_token);
+          
+          // Fetch user data from your backend
+          const userData = await fetchUser(access_token);
+          if (userData) {
+            setUser(userData);
+          }
+          
+          // Clear URL fragments
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (err) {
+        console.error('OAuth callback processing error:', err);
+        setError('Failed to process OAuth callback');
+      }
+    };
+
+    // Check if we're on the callback page
+    if (window.location.pathname === '/auth/callback') {
+      handleOAuthCallback();
+    }
   }, []);
 
   const fetchUser = async (authToken: string) => {
@@ -183,6 +227,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      
+      if (!supabase) {
+        throw new Error("Supabase client is not initialized. Check your environment variables.");
+      }
+
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // The OAuth flow will redirect the user to Google
+      // The callback will be handled by the useEffect that checks for URL fragments
+    } catch (err: any) {
+      const errorMessage = err.message || 'An unknown Google sign-in error occurred.';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const clearError = useCallback(() => setError(null), []);
 
   const updatePassword = async (newPassword: string) => {
@@ -252,7 +328,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updatePassword,
       refreshUser,
       refreshNavBar,
-      setNavBarRefreshFunction: setNavBarRefreshFunctionWrapper
+      setNavBarRefreshFunction: setNavBarRefreshFunctionWrapper,
+      signInWithGoogle
     }}>
       {children}
     </AuthContext.Provider>
