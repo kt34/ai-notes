@@ -21,7 +21,7 @@ export function UploadComponent() {
   const dragCounter = React.useRef(0);
   const { usageData, isLoading: isLoadingUsage } = useUsage();
 
-  const isUploadDisabled = !isLoadingUsage && usageData?.remaining_uploads === 0;
+  const isUploadDisabled = isLoadingUsage || usageData?.remaining_uploads === 0;
 
   // Cleanup WebSocket on component unmount
   useEffect(() => {

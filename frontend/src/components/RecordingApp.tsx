@@ -20,7 +20,7 @@ export function RecordingApp({}: RecordingAppProps) {
   const navigate = useNavigate();
   const { usageData, isLoading: isLoadingUsage } = useUsage();
   
-  const isRecordingDisabled = !isLoadingUsage && usageData?.remaining_recordings === 0;
+  const isRecordingDisabled = isLoadingUsage || usageData?.remaining_recordings === 0;
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
