@@ -278,10 +278,7 @@ export function RecordingApp({}: RecordingAppProps) {
                 }
 
                 const lectureId = message.lecture_id;
-                const finalTranscript = message.transcript;
 
-                document.title = `${finalTranscript?.split('.')[0]?.trim() || 'Untitled Lecture'} - notez.ai`;
-                
                 setProcessingStatus('Complete!');
                 setProcessingProgress(100);
                 
