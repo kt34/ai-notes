@@ -41,6 +41,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
+      // If tokens are in URL hash (after OAuth), process them first
+      const hash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : '';
+      const params = new URLSearchParams(hash);
+      const hashAccessToken = params.get('access_token');
+      const hashRefreshToken = params.get('refresh_token');
+
+      if (hashAccessToken && hashRefreshToken) {
+        try {
+          localStorage.setItem('token', hashAccessToken);
+          localStorage.setItem('refreshToken', hashRefreshToken);
+          setToken(hashAccessToken);
+
+          const userData = await fetchUser(hashAccessToken);
+          if (userData) {
+            setUser(userData);
+          }
+        } finally {
+          // Clear hash regardless of success to avoid reprocessing
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+          setIsLoading(false);
+        }
+        return; // Prevent falling through to stored token path
+      }
+
       const storedToken = localStorage.getItem('token');
       const storedRefreshToken = localStorage.getItem('refreshToken');
       
@@ -138,10 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Check if we're on the callback page
-    if (window.location.pathname === '/auth/callback') {
-      handleOAuthCallback();
-    }
+    // Process tokens if present on any route (we now redirect to /record directly)
+    handleOAuthCallback();
   }, []);
 
   const fetchUser = async (authToken: string) => {

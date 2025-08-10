@@ -305,7 +305,7 @@ def oauth_google_callback(code: str, request: Request):
         raise HTTPException(status_code=400, detail="Missing tokens from Supabase response")
 
     location = (
-        f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
+        f"{settings.FRONTEND_URL.rstrip('/')}/record"
         f"#access_token={urllib.parse.quote(access_token)}&refresh_token={urllib.parse.quote(refresh_token)}"
     )
     return Response(status_code=302, headers={"Location": location})
