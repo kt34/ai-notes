@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str
     OPENAI_API_KEY: str
     FRONTEND_URL: str
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
     STRIPE_PUBLISHABLE_KEY: str
     STRIPE_SECRET_KEY: str
     STRIPE_PRODUCT_ID: str

@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, WebSocket, HTTPException, Depends, UploadFile, File, Form, Request
+from fastapi import FastAPI, WebSocket, HTTPException, Depends, UploadFile, File, Form, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from starlette.websockets import WebSocketDisconnect
@@ -32,6 +32,8 @@ from typing import Optional
 import base64
 import io
 import pptx
+import urllib.parse
+import requests
 
 app = FastAPI()
 app.add_middleware(
@@ -225,6 +227,81 @@ async def resend_verification_endpoint(data: ResendVerificationRequest):
 async def forgot_password_endpoint(request: ForgotPasswordRequest):
     """Initiate password reset process."""
     return await forgot_password(request)
+
+# --- Google OAuth via backend domain (Proxy) ---
+@app.get("/login/google")
+def oauth_google_start(request: Request):
+    """Redirect user to Google's OAuth consent screen with our domain as redirect URI."""
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="GOOGLE_CLIENT_ID not configured")
+
+    # Callback to our backend route (uses current request host)
+    redirect_uri = str(request.url_for("oauth_google_callback"))
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "include_granted_scopes": "true",
+        "prompt": "consent",
+    }
+    url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    return Response(status_code=302, headers={"Location": url})
+
+
+@app.get("/auth/callback/google", name="oauth_google_callback")
+def oauth_google_callback(code: str, request: Request):
+    """Handle Google callback, exchange code for Supabase session, then redirect to frontend."""
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Google OAuth env vars not configured")
+
+    redirect_uri = str(request.url_for("oauth_google_callback"))
+
+    # Exchange code for Google tokens
+    token_resp = requests.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        },
+        timeout=15,
+    )
+    if token_resp.status_code != 200:
+        raise HTTPException(status_code=400, detail="Failed to exchange code with Google")
+    token_json = token_resp.json()
+    id_token = token_json.get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=400, detail="Google did not return id_token")
+
+    # Exchange Google ID token for Supabase session
+    supabase_token_url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/token?grant_type=id_token"
+    sb_resp = requests.post(
+        supabase_token_url,
+        json={"provider": "google", "id_token": id_token},
+        headers={"apikey": settings.SUPABASE_KEY, "Content-Type": "application/json"},
+        timeout=15,
+    )
+    if sb_resp.status_code != 200:
+        try:
+            detail = sb_resp.json()
+        except Exception:
+            detail = sb_resp.text
+        raise HTTPException(status_code=400, detail=f"Supabase token exchange failed: {detail}")
+    sb = sb_resp.json()
+    access_token = sb.get("access_token")
+    refresh_token = sb.get("refresh_token")
+    if not access_token or not refresh_token:
+        raise HTTPException(status_code=400, detail="Missing tokens from Supabase response")
+
+    location = (
+        f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
+        f"#access_token={urllib.parse.quote(access_token)}&refresh_token={urllib.parse.quote(refresh_token)}"
+    )
+    return Response(status_code=302, headers={"Location": location})
 
 # Stripe integration
 stripe.api_key = settings.STRIPE_SECRET_KEY

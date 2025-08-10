@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { apiRequest, TokenExpiredError } from '../utils/api';
+import { config } from '../config';
 import { supabase } from '../utils/supabase'; // Import the shared client
 
 interface User {
@@ -88,6 +89,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!supabase) return;
 
       try {
+        // If tokens are present from backend callback, set session manually
+        const hash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : '';
+        const params = new URLSearchParams(hash);
+        const backendAccessToken = params.get('access_token');
+        const backendRefreshToken = params.get('refresh_token');
+
+        if (backendAccessToken && backendRefreshToken) {
+          localStorage.setItem('token', backendAccessToken);
+          localStorage.setItem('refreshToken', backendRefreshToken);
+          setToken(backendAccessToken);
+
+          const userData = await fetchUser(backendAccessToken);
+          if (userData) setUser(userData);
+
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return;
+        }
+
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -232,21 +251,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       
-      if (!supabase) {
-        throw new Error("Supabase client is not initialized. Check your environment variables.");
-      }
-
-      const redirectUrl = `${window.location.origin}/auth/callback`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
+      // Start backend-proxied flow to show our own domain on Google's screen
+      const apiBase = config.apiUrl.replace(/\/$/, '');
+      const sameOrigin = apiBase.startsWith(window.location.origin);
+      const startUrl = sameOrigin ? '/login/google' : `${apiBase}/login/google`;
+      window.location.href = startUrl;
 
       // The OAuth flow will redirect the user to Google
       // The callback will be handled by the useEffect that checks for URL fragments
