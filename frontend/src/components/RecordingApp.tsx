@@ -13,6 +13,8 @@ export function RecordingApp({}: RecordingAppProps) {
   const [transcription, setTranscription] = useState('');
   const [completedTranscriptSegments, setCompletedTranscriptSegments] = useState<string[]>([]);
   const [currentInterimTranscript, setCurrentInterimTranscript] = useState('');
+  const lastInterimRef = useRef<string>('');
+  const lastUiUpdateTsRef = useRef<number>(0);
   const [summary, setSummary] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
@@ -36,6 +38,24 @@ export function RecordingApp({}: RecordingAppProps) {
   const { token } = useAuth();
   const backendUrl = `${config.apiUrl.replace('http', 'ws')}/ws/transcribe?token=${token}`;
   const { setRecordingActive } = useRecording();
+
+  // Merge helper to avoid duplicate fragments like "So I think I think ..."
+  const mergeWithOverlap = (previous: string, next: string): string | null => {
+    const prevTrim = (previous || '').trim();
+    const nextTrim = (next || '').trim();
+    if (!prevTrim || !nextTrim) return null;
+    const prevWords = prevTrim.split(/\s+/);
+    const nextWords = nextTrim.split(/\s+/);
+    const maxK = Math.min(prevWords.length, nextWords.length, 5);
+    for (let k = maxK; k >= 2; k--) { // require at least 2-word overlap for confidence
+      const prevTail = prevWords.slice(-k).join(' ');
+      const nextHead = nextWords.slice(0, k).join(' ');
+      if (prevTail.toLowerCase() === nextHead.toLowerCase()) {
+        return prevWords.concat(nextWords.slice(k)).join(' ');
+      }
+    }
+    return null;
+  };
 
   // Update the ref whenever the isRecording state changes
   useEffect(() => {
@@ -307,11 +327,38 @@ export function RecordingApp({}: RecordingAppProps) {
             // Handle live transcription text if no lecture_id yet.
             if (message.text !== undefined && message.is_final_utterance_segment !== undefined) {
                 if (isRecordingRef.current && !isProcessing) {
+                    const incoming = message.text as string;
                     if (message.is_final_utterance_segment) {
-                        setCompletedTranscriptSegments(prev => [...prev, message.text]);
+                        // Commit the longest seen interim for this utterance (prevents one-word finals)
+                        const buffered = lastInterimRef.current;
+                        const commitText = (buffered && buffered.length >= incoming.length) ? buffered : incoming;
+                        if (commitText && commitText.trim().length > 0) {
+                          setCompletedTranscriptSegments(prev => {
+                            const last = prev.length ? prev[prev.length - 1] : '';
+                            // Avoid duplicating identical commits
+                            if (last === commitText) return prev;
+                            const merged = mergeWithOverlap(last, commitText);
+                            if (merged) {
+                              return [...prev.slice(0, -1), merged];
+                            }
+                            return [...prev, commitText];
+                          });
+                        }
+                        // Reset interim state
+                        lastInterimRef.current = '';
                         setCurrentInterimTranscript('');
                     } else {
-                        setCurrentInterimTranscript(message.text);
+                        // Sticky interim: only accept if it grows the text (prevents backward rewrites)
+                        if (incoming.length >= lastInterimRef.current.length) {
+                            // Throttle UI to ~8 updates/sec
+                            const now = performance.now();
+                            const elapsed = now - lastUiUpdateTsRef.current;
+                            lastInterimRef.current = incoming;
+                            if (elapsed >= 120) {
+                                setCurrentInterimTranscript(incoming);
+                                lastUiUpdateTsRef.current = now;
+                            }
+                        }
                     }
                 }
             }

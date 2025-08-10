@@ -6,6 +6,9 @@ class STTClient:
     def __init__(self, api_key: str):
         self.deepgram = DeepgramClient(api_key)
         self._current_q: asyncio.Queue = None
+        # Track last partial and last finalized text per utterance to improve finalization
+        self._last_partial_text: str = ""
+        self._last_final_text: str = ""
 
     # --- Event Handlers ---
     def _on_open(self, dg_connection_instance, open_event):
@@ -26,6 +29,10 @@ class STTClient:
                 # speech_final is a top-level attribute on the result object for Deepgram Python SDK v3+
                 # For older versions, it might be in result.channel.alternatives[0].metadata.speech_final
                 is_final_utterance = getattr(result, 'speech_final', False)
+                # Track last seen texts for utterance-final fallback
+                self._last_partial_text = transcript
+                if is_final_utterance:
+                    self._last_final_text = transcript
                 self._current_q.put_nowait({
                     "text": transcript,
                     "is_speech_final": is_final_utterance
@@ -45,6 +52,20 @@ class STTClient:
 
     def _on_utterance_end(self, dg_connection_instance, utterance_end):
         print(f"STTClient CB: Deepgram Utterance ended: {utterance_end}") # This CB also indicates an utterance end.
+        # Fallback: if Deepgram didn't mark the last message as final, emit the last partial as final
+        if self._current_q is None:
+            return
+        try:
+            if self._last_partial_text and self._last_partial_text != self._last_final_text:
+                self._current_q.put_nowait({
+                    "text": self._last_partial_text,
+                    "is_speech_final": True
+                })
+                # Mark as finalized to avoid duplicate emits for this utterance
+                self._last_final_text = self._last_partial_text
+                self._last_partial_text = ""
+        except asyncio.QueueFull:
+            print("STTClient CB (_on_utterance_end): queue full, could not enqueue fallback final.")
 
     def _on_error(self, dg_connection_instance, error):
         error_message = str(error)
@@ -88,7 +109,7 @@ class STTClient:
                 punctuate=True, language="en-US",
                 encoding="linear16", channels=1, sample_rate=16000,
                 interim_results=True, 
-                utterance_end_ms="2000", vad_events=True,
+                utterance_end_ms="1000", vad_events=True,
                 smart_format=True,
                 # speech_final=True # Explicitly request speech_final events
             )
@@ -179,4 +200,7 @@ class STTClient:
                     except asyncio.QueueFull: pass # Should not happen if empty
                     except Exception: pass # Catch any other rare errors
             self._current_q = None 
+            # Reset utterance trackers
+            self._last_partial_text = ""
+            self._last_final_text = ""
             print("STTClient: stream_transcribe fully finished.")
