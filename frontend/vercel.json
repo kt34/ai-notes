@@ -3,8 +3,6 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/login/google", "destination": "https://notez-ai.onrender.com/login/google" },
-    { "source": "/auth/callback/google", "destination": "https://notez-ai.onrender.com/auth/callback/google" },
     { "source": "/(.*)", "destination": "/" }
   ],
   "headers": [
