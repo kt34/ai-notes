@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRecording } from '../contexts/RecordingContext';
+import { ConfirmNavigationModal } from './ConfirmNavigationModal';
 import { apiRequest } from '../utils/api';
 
 interface SubscriptionData {
@@ -11,6 +13,15 @@ export function NavBar() {
   const { user, logout, token, setNavBarRefreshFunction } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isRecordingActive } = useRecording();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const confirmNavigate = (to: string) => {
+    if (isRecordingActive && location.pathname === '/record') {
+      setPendingPath(to);
+      return;
+    }
+    navigate(to);
+  };
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -107,23 +118,35 @@ export function NavBar() {
       >
         notez.ai
       </div>
+      <ConfirmNavigationModal
+        isOpen={!!pendingPath}
+        onCancel={() => setPendingPath(null)}
+        onConfirm={() => {
+          if (pendingPath) navigate(pendingPath);
+          setPendingPath(null);
+        }}
+        title="Leave recording?"
+        message="A recording is in progress. If you navigate away, your recording will continue only if you stay on this page. Do you still want to leave?"
+        confirmLabel="Leave"
+        cancelLabel="Stay"
+      />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <div className="nav-links">
           <button 
-            onClick={() => navigate('/record')}
+            onClick={() => confirmNavigate('/record')}
             className={`nav-link ${location.pathname === '/record' ? 'active' : ''}`}
           >
             Record
           </button>
           <button 
-            onClick={() => navigate('/upload')}
+            onClick={() => confirmNavigate('/upload')}
             className={`nav-link ${location.pathname === '/upload' ? 'active' : ''}`}
           >
             Upload
           </button>
           <button 
-            onClick={() => navigate('/lectures')}
+            onClick={() => confirmNavigate('/lectures')}
             className={`nav-link ${location.pathname.startsWith('/lectures') ? 'active' : ''}`}
           >
             Lectures

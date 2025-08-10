@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { config } from '../config';
 import { useUsage } from '../hooks/useUsage';
+import { useRecording } from '../contexts/RecordingContext';
 
 export interface RecordingAppProps {}
 
@@ -34,11 +35,13 @@ export function RecordingApp({}: RecordingAppProps) {
 
   const { token } = useAuth();
   const backendUrl = `${config.apiUrl.replace('http', 'ws')}/ws/transcribe?token=${token}`;
+  const { setRecordingActive } = useRecording();
 
   // Update the ref whenever the isRecording state changes
   useEffect(() => {
     console.log('🔄 Recording state changed:', isRecording);
     isRecordingRef.current = isRecording;
+    setRecordingActive(isRecording);
     if (isRecording) {
       // Start duration timer
       setDuration(0);
@@ -160,6 +163,7 @@ export function RecordingApp({}: RecordingAppProps) {
     }
 
     setIsRecording(false);
+    setRecordingActive(false);
     setIsProcessing(true); 
     setProcessingStatus('Finalizing recording...'); // Initial status when stopping
     setProcessingProgress(5); // Small initial progress
@@ -250,12 +254,14 @@ export function RecordingApp({}: RecordingAppProps) {
         
         console.log('✅ Audio setup complete, starting recording...');
         setIsRecording(true); 
+        setRecordingActive(true);
 
       } catch (error) {
         console.error('❌ Audio setup failed:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);
         setTranscription(`🔴 Error: Could not access microphone. ${errorMessage}`);
         setIsRecording(false);
+        setRecordingActive(false);
         cleanup(false); 
       }
     };
@@ -338,6 +344,7 @@ export function RecordingApp({}: RecordingAppProps) {
         if (isRecordingRef.current) {
             setTranscription(prev => `${prev}\n\n⚠️ Connection closed unexpectedly. Code: ${event.code}`);
             setIsRecording(false);
+            setRecordingActive(false);
             cleanup(false);
         } else if (isProcessing) {
              setTranscription(prev => `${prev}\n\n⚠️ Connection closed while processing. Code: ${event.code}`);
