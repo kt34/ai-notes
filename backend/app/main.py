@@ -235,8 +235,12 @@ def oauth_google_start(request: Request):
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="GOOGLE_CLIENT_ID not configured")
 
-    # Callback to our backend route (uses current request host)
-    redirect_uri = str(request.url_for("oauth_google_callback"))
+    # Use frontend domain in prod (via Vercel rewrite), but local backend route in dev
+    if "localhost" in settings.FRONTEND_URL:
+        redirect_uri = str(request.url_for("oauth_google_callback"))
+    else:
+        redirect_uri = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback/google"
+    print(redirect_uri)
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": redirect_uri,
@@ -256,7 +260,10 @@ def oauth_google_callback(code: str, request: Request):
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="Google OAuth env vars not configured")
 
-    redirect_uri = str(request.url_for("oauth_google_callback"))
+    if "localhost" in settings.FRONTEND_URL:
+        redirect_uri = str(request.url_for("oauth_google_callback"))
+    else:
+        redirect_uri = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback/google"
 
     # Exchange code for Google tokens
     token_resp = requests.post(
