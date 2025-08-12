@@ -84,9 +84,26 @@ export function PricingPage() {
   };
 
   const plans = [
-    { id: 'plus', name: 'Plus Plan', description: 'Access to core transcription and summarization features for individual use.', price: '$10/mo', features: ['Up to 10 hours of transcription/month', 'Standard AI summaries', 'Email support'] },
-    { id: 'pro', name: 'Pro Plan', description: 'Advanced features for professionals and frequent users, with higher limits.', price: '$20/mo', features: ['Up to 30 hours of transcription/month', 'Detailed AI summaries & key concepts', 'Section-by-section breakdown', 'Priority email support'] },
-    { id: 'max', name: 'Max Plan', description: 'Unlimited access and premium support for power users and teams.', price: '$30/mo', features: ['Unlimited transcription hours', 'All AI features including advanced analytics', 'Dedicated support channel', 'Early access to new features'] },
+    { id: 'plus', name: 'Plus Plan', description: 'Perfect for students getting started with AI-powered note-taking.', price: '$10/mo', features: [
+      { text: '5 live recordings per month', highlight: '5' },
+      { text: '10 file uploads per month', highlight: '10' },
+      'Real-time transcription',
+      'AI summaries & key insights',
+      'Email support'
+    ]},
+    { id: 'pro', name: 'Pro Plan', description: 'Ideal for professionals and heavy users who need more capacity.', price: '$20/mo', features: [
+      { text: '15 live recordings per month', highlight: '15' },
+      { text: '30 file uploads per month', highlight: '30' },
+      'Real-time transcription',
+      'AI summaries & key insights',
+      'Priority email support'
+    ]},
+    { id: 'max', name: 'Max Plan', description: 'Ultimate plan for power users, teams, and unlimited productivity.', price: '$30/mo', features: [
+      { text: 'Unlimited recordings & uploads', highlight: 'Unlimited' },
+      'Real-time transcription',
+      'AI summaries & key insights',
+      'Dedicated support channel'
+    ]},
   ];
 
   return (
@@ -160,12 +177,33 @@ export function PricingPage() {
                 <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)' }}>/mo</span>
               </p>
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem 0', flex: '1 0 auto' }}>
-                {plan.features.map(feature => (
-                  <li key={feature} style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start' }}>
-                    <span style={{ color: '#5658f5', marginRight: '0.75rem', fontSize: '1.2rem', lineHeight: '1.2rem' }}>✓</span>
-                    <span style={{ flex: 1 }}>{feature}</span>
-                  </li>
-                ))}
+                {plan.features.map((feature, index) => {
+                  const isFeatureObject = typeof feature === 'object' && feature !== null;
+                  const featureText = isFeatureObject ? feature.text : feature;
+                  const highlightText = isFeatureObject ? feature.highlight : null;
+                  
+                  return (
+                    <li key={index} style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start' }}>
+                      <span style={{ color: '#5658f5', marginRight: '0.75rem', fontSize: '1.2rem', lineHeight: '1.2rem' }}>✓</span>
+                      <span style={{ flex: 1 }}>
+                        {highlightText ? (
+                          <span>
+                            <span style={{
+                              color: '#ffffff',
+                              fontWeight: '700',
+                              fontSize: '1.1rem'
+                            }}>
+                              {highlightText}
+                            </span>
+                            {featureText.replace(highlightText, '')}
+                          </span>
+                        ) : (
+                          featureText
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
             <div style={{ marginTop: 'auto' }}>

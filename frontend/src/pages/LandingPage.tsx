@@ -327,7 +327,12 @@ export function LandingPage() {
                 name="Plus Plan"
                 price="$10"
                 period="/mo"
-                features={['10 hours transcription/month', 'Standard AI summaries', 'Email support']}
+                features={[
+                  { text: '5 live recordings per month', highlight: '5' },
+                  { text: '10 file uploads per month', highlight: '10' },
+                  'AI-powered summaries & insights',
+                  'Email support'
+                ]}
               />
             </div>
             <div style={{ transitionDelay: '0.2s' }}>
@@ -335,7 +340,12 @@ export function LandingPage() {
                 name="Pro Plan"
                 price="$20"
                 period="/mo"
-                features={['30 hours transcription/month', 'Detailed AI summaries', 'Priority support']}
+                features={[
+                  { text: '15 live recordings per month', highlight: '15' },
+                  { text: '30 file uploads per month', highlight: '30' },
+                  'AI-powered summaries & insights',
+                  'Priority support'
+                ]}
                 isPopular={true}
               />
             </div>
@@ -344,7 +354,11 @@ export function LandingPage() {
                 name="Max Plan"
                 price="$30"
                 period="/mo"
-                features={['Unlimited transcription', 'Advanced analytics', 'Dedicated support']}
+                features={[
+                  { text: 'Unlimited recordings & uploads', highlight: 'Unlimited' },
+                  'AI-powered summaries & insights',
+                  'Dedicated support'
+                ]}
               />
             </div>
           </div>
@@ -433,7 +447,7 @@ function PricingCard({ name, price, period, features, isPopular = false }: {
   name: string; 
   price: string; 
   period: string; 
-  features: string[];
+  features: (string | { text: string; highlight: string })[];
   isPopular?: boolean;
 }) {
   return (
@@ -500,24 +514,43 @@ function PricingCard({ name, price, period, features, isPopular = false }: {
         padding: 0, 
         margin: 0
       }}>
-        {features.map((feature, index) => (
-          <li key={index} style={{ 
-            color: 'rgba(255,255,255,0.8)', 
-            marginBottom: '0.75rem', 
-            display: 'flex', 
-            alignItems: 'center',
-            fontSize: '0.95rem'
-          }}>
-            <span style={{ 
-              color: '#5658f5', 
-              marginRight: '0.75rem', 
-              fontSize: '1rem' 
+        {features.map((feature, index) => {
+          const isFeatureObject = typeof feature === 'object' && feature !== null;
+          const featureText = isFeatureObject ? feature.text : feature;
+          const highlightText = isFeatureObject ? feature.highlight : null;
+          
+          return (
+            <li key={index} style={{ 
+              color: 'rgba(255,255,255,0.8)', 
+              marginBottom: '0.75rem', 
+              display: 'flex', 
+              alignItems: 'center',
+              fontSize: '0.95rem'
             }}>
-              ✓
-            </span>
-            {feature}
-          </li>
-        ))}
+              <span style={{ 
+                color: '#5658f5', 
+                marginRight: '0.75rem', 
+                fontSize: '1rem' 
+              }}>
+                ✓
+              </span>
+              {highlightText ? (
+                <span>
+                  <span style={{
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    fontSize: '1.1rem'
+                  }}>
+                    {highlightText}
+                  </span>
+                  {featureText.replace(highlightText, '')}
+                </span>
+              ) : (
+                featureText
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
