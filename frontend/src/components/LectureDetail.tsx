@@ -152,86 +152,84 @@ export function LectureDetail({ lectureId, onBack }: LectureDetailProps) {
   const { token } = useAuth();
 
   const formatLectureForCopy = (lecture: Lecture): string => {
-    let content = `${lecture.lecture_title}\n`;
-    content += '='.repeat(lecture.lecture_title.length) + '\n\n';
+    // Title with visual emphasis
+    let content = `🎓 ${lecture.lecture_title.toUpperCase()}\n\n`;
 
     // Topic Summary
-    content += `${lecture.topic_summary_sentence}\n\n`;
+    content += `📋 OVERVIEW\n`;
+    content += `   ${lecture.topic_summary_sentence}\n\n`;
 
     // Key Concepts
-    content += '✨ Key Concepts\n';
-    content += '-------------\n';
-    content += lecture.key_concepts.map(concept => `• ${concept}`).join('\n') + '\n\n';
+    content += '✨ KEY CONCEPTS\n';
+    content += lecture.key_concepts.map(concept => `   • ${concept}`).join('\n') + '\n\n';
 
     // Main Points
-    content += '📝 Main Points\n';
-    content += '------------\n';
-    content += lecture.main_points_covered.map(point => `- ${point}`).join('\n') + '\n\n';
+    content += '📝 MAIN POINTS\n';
+    content += lecture.main_points_covered.map((point, index) => {
+      return `   ${index + 1}. ${point}`;
+    }).join('\n\n') + '\n\n';
 
     // Section-by-Section Breakdown
-    content += '📑 Section-by-Section Breakdown\n';
-    content += '--------------------------\n';
+    content += '📑 SECTION-BY-SECTION BREAKDOWN\n\n';
+    
     lecture.section_summaries.forEach((section, index) => {
-      content += `${index + 1}. ${section.section_title}\n`;
+      content += `   ${index + 1}. SECTION: ${section.section_title.toUpperCase()}\n\n`;
       
       if (section.key_takeaways?.length) {
-        content += '\n   Key Takeaways:\n';
-        content += section.key_takeaways.map(point => `   • ${point}`).join('\n');
-        content += '\n';
+        content += '      KEY TAKEAWAYS:\n';
+        content += section.key_takeaways.map(point => `         • ${point}`).join('\n');
+        content += '\n\n';
       }
 
       if (section.new_vocabulary?.length) {
-        content += '\n   New Vocabulary:\n';
-        content += section.new_vocabulary.map(term => `   • ${term}`).join('\n');
-        content += '\n';
+        content += '      NEW VOCABULARY:\n';
+        content += section.new_vocabulary.map(term => `         • ${term}`).join('\n');
+        content += '\n\n';
       }
 
       if (section.examples?.length) {
-        content += '\n   Examples:\n';
-        content += section.examples.map(example => `   • ${example}`).join('\n');
-        content += '\n';
+        content += '      EXAMPLES:\n';
+        content += section.examples.map(example => `         • ${example}`).join('\n');
+        content += '\n\n';
       }
 
       if (section.study_questions?.length) {
-        content += '\n   Study Questions:\n';
-        content += section.study_questions.map(q => `   • ${q}`).join('\n');
-        content += '\n';
+        content += '      STUDY QUESTIONS:\n';
+        content += section.study_questions.map(q => `         • ${q}`).join('\n');
+        content += '\n\n';
       }
 
       if (section.useful_references?.length) {
-        content += '\n   Useful References:\n';
-        content += section.useful_references.map(ref => `   • ${ref.title} (${ref.url})`).join('\n');
-        content += '\n';
+        content += '      USEFUL REFERENCES:\n';
+        content += section.useful_references.map(ref => `         • ${ref.title}\n           → ${ref.url}`).join('\n');
+        content += '\n\n';
       }
-      content += '\n';
     });
 
     // Conclusion
     if (lecture.conclusion_takeaways) {
-      content += '🎯 Conclusion\n';
-      content += '-----------\n';
-      content += lecture.conclusion_takeaways + '\n\n';
+      content += '🎯 CONCLUSION\n';
+      content += `   ${lecture.conclusion_takeaways}\n\n`;
     }
 
     // References
     if (lecture.references?.length) {
-      content += '📚 Suggested References\n';
-      content += '-------------------\n';
-      content += lecture.references.map(ref => `• ${ref.title}\n  Source: ${ref.url}`).join('\n\n') + '\n\n';
+      content += '📚 SUGGESTED REFERENCES\n';
+      content += lecture.references.map(ref => `   • ${ref.title}\n     → ${ref.url}`).join('\n\n') + '\n\n';
     }
 
     // Study Questions
     if (lecture.study_questions?.length) {
-      content += '📝 Study Questions\n';
-      content += '---------------\n';
-      content += lecture.study_questions.map((q, i) => `${i + 1}. ${q}`).join('\n\n') + '\n\n';
+      content += '📝 STUDY QUESTIONS\n';
+      content += lecture.study_questions.map((q, i) => `   ${i + 1}. ${q}`).join('\n\n') + '\n\n';
     }
 
     // Flashcards
     if (lecture.flashcards?.length) {
-      content += '🃏 Flashcards\n';
-      content += '-----------\n';
-      content += lecture.flashcards.map((card, i) => `Q${i + 1}: ${card.question}\nA${i + 1}: ${card.answer}`).join('\n\n') + '\n\n';
+      content += '🃏 FLASHCARDS\n\n';
+      content += lecture.flashcards.map((card, i) => {
+        return `   ❓ Q${i + 1}: ${card.question}\n   ✅ A${i + 1}: ${card.answer}`;
+      }).join('\n\n') + '\n\n';
     }
 
     return content;
