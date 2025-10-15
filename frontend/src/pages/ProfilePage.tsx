@@ -504,6 +504,39 @@ export function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: '0.5rem',
+          paddingTop: '1.5rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '0.8rem',
+          color: 'rgba(255, 255, 255, 0.4)'
+        }}>
+          <span>© 2025 Notez.ai</span>
+          <a
+            href="mailto:notezaihelp@gmail.com"
+            style={{
+              color: 'rgba(255, 255, 255, 0.4)',
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+              fontWeight: '400'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.4)';
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+          >
+            Support
+          </a>
+        </div>
       </div>
 
       {showCancelConfirm && (

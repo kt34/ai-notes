@@ -167,7 +167,7 @@ export function TermsPage() {
                 lineHeight: '1.6',
                 color: 'rgba(255, 255, 255, 0.7)',
                 textAlign: 'left'
-              }}>If you have any questions or concerns about these terms of service, please contact our support team at <a href="mailto:support@notez.ai" style={{ color: '#646cff', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={(e) => e.currentTarget.style.color = '#7c82ff'} onMouseOut={(e) => e.currentTarget.style.color = '#646cff'}>support@notez.ai</a>. We are committed to addressing your concerns and maintaining transparent communication with our users.</p>
+              }}>If you have any questions or concerns about these terms of service, please contact our support team at <a href="mailto:notezaihelp@gmail.com" style={{ color: '#646cff', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={(e) => e.currentTarget.style.color = '#7c82ff'} onMouseOut={(e) => e.currentTarget.style.color = '#646cff'}>notezaihelp@gmail.com</a>. We are committed to addressing your concerns and maintaining transparent communication with our users.</p>
             </section>
           </div>
         </div>

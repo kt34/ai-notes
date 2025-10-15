@@ -181,7 +181,7 @@ export function LandingPage() {
             pointerEvents: 'none'
           }} />
           <img 
-            src="/images/demo-preview.png"
+            src="/images/recording-preview.png"
             alt="notez.ai in action"
             style={{
               width: '100%',
@@ -325,7 +325,7 @@ export function LandingPage() {
             <div style={{ transitionDelay: '0.1s' }}>
               <PricingCard 
                 name="Plus Plan"
-                price="$10"
+                price="$9.99"
                 period="/mo"
                 features={[
                   { text: '5 live recordings per month', highlight: '5' },
@@ -338,7 +338,7 @@ export function LandingPage() {
             <div style={{ transitionDelay: '0.2s' }}>
               <PricingCard 
                 name="Pro Plan"
-                price="$20"
+                price="$14.99"
                 period="/mo"
                 features={[
                   { text: '15 live recordings per month', highlight: '15' },
@@ -352,10 +352,11 @@ export function LandingPage() {
             <div style={{ transitionDelay: '0.3s' }}>
               <PricingCard 
                 name="Max Plan"
-                price="$30"
+                price="$29.99"
                 period="/mo"
                 features={[
-                  { text: 'Unlimited recordings & uploads', highlight: 'Unlimited' },
+                  { text: 'Unlimited recordings', highlight: 'Unlimited' },
+                  { text: 'Unlimited file uploads', highlight: 'Unlimited' },
                   'AI-powered summaries & insights',
                   'Dedicated support'
                 ]}

@@ -25,3 +25,5 @@ dump_project.sh
 *.wav
 backend/app/*.wav
 backend/app/lecture.wav
+
+/videos

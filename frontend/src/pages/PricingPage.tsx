@@ -6,6 +6,15 @@ import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe as StripeType } from '@stripe/stripe-js';
 import { config } from '../config';
 
+interface Plan {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  features: (string | { text: string; highlight: string })[];
+  isPopular?: boolean;
+}
+
 const stripePromise = config.stripePublishableKey 
   ? loadStripe(config.stripePublishableKey) 
   : null;
@@ -83,23 +92,24 @@ export function PricingPage() {
     }
   };
 
-  const plans = [
-    { id: 'plus', name: 'Plus Plan', description: 'Perfect for students getting started with AI-powered note-taking.', price: '$10/mo', features: [
-      { text: '5 live recordings per month', highlight: '5' },
-      { text: '10 file uploads per month', highlight: '10' },
+  const plans: Plan[] = [
+    { id: 'plus', name: 'Plus Plan', description: 'Perfect for students getting started with AI-powered note-taking.', price: '$9.99/mo', features: [
+      { text: '5 live recordings', highlight: '5' },
+      { text: '10 file uploads', highlight: '10' },
       'Real-time transcription',
       'AI summaries & key insights',
       'Email support'
     ]},
-    { id: 'pro', name: 'Pro Plan', description: 'Ideal for professionals and heavy users who need more capacity.', price: '$20/mo', features: [
-      { text: '15 live recordings per month', highlight: '15' },
-      { text: '30 file uploads per month', highlight: '30' },
+    { id: 'pro', name: 'Pro Plan', description: 'Ideal for professionals and heavy users who need more capacity.', price: '$14.99/mo', features: [
+      { text: '15 live recordings', highlight: '15' },
+      { text: '30 file uploads', highlight: '30' },
       'Real-time transcription',
       'AI summaries & key insights',
       'Priority email support'
-    ]},
-    { id: 'max', name: 'Max Plan', description: 'Ultimate plan for power users, teams, and unlimited productivity.', price: '$30/mo', features: [
-      { text: 'Unlimited recordings & uploads', highlight: 'Unlimited' },
+    ], isPopular: true},
+    { id: 'max', name: 'Max Plan', description: 'Ultimate plan for power users, teams, and unlimited productivity.', price: '$29.99/mo', features: [
+      { text: 'Unlimited recordings', highlight: 'Unlimited' },
+      { text: 'Unlimited uploads', highlight: 'Unlimited' },
       'Real-time transcription',
       'AI summaries & key insights',
       'Dedicated support channel'
@@ -155,20 +165,39 @@ export function PricingPage() {
           <div 
             key={plan.id} 
             style={{
-              background: 'rgba(255, 255, 255, 0.03)',
+              background: plan.isPopular ? 'linear-gradient(135deg, rgba(86, 88, 245, 0.1), rgba(140, 142, 255, 0.1))' : 'rgba(255, 255, 255, 0.03)',
               padding: '2rem',
               borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: hoveredPlan === plan.id ? '0 12px 40px 0 rgba(0, 0, 0, 0.2)' : '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+              border: plan.isPopular ? '1px solid rgba(86, 88, 245, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: plan.isPopular 
+                ? (hoveredPlan === plan.id ? '0 12px 40px 0 rgba(86, 88, 245, 0.3)' : '0 8px 32px 0 rgba(86, 88, 245, 0.2)')
+                : (hoveredPlan === plan.id ? '0 12px 40px 0 rgba(0, 0, 0, 0.2)' : '0 8px 32px 0 rgba(0, 0, 0, 0.1)'),
               backdropFilter: 'blur(5px)',
               display: 'flex',
               flexDirection: 'column',
               transition: 'transform 0.3s ease, box-shadow 0.3s ease',
               transform: hoveredPlan === plan.id ? 'translateY(-5px)' : 'translateY(0)',
+              position: 'relative',
             }}
             onMouseEnter={() => setHoveredPlan(plan.id)}
             onMouseLeave={() => setHoveredPlan(null)}
           >
+            {plan.isPopular && (
+              <div style={{
+                position: 'absolute',
+                top: '-0.5rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'linear-gradient(120deg, #5658f5, #8c8eff)',
+                color: 'white',
+                padding: '0.25rem 1rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: '600'
+              }}>
+                Most Popular
+              </div>
+            )}
             <div style={{ flex: '1 0 auto' }}>
               <h3 style={{ color: '#fff', fontSize: '1.7rem', margin: '0 0 0.75rem 0', fontWeight: '600' }}>{plan.name}</h3>
               <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1rem', marginBottom: '1.5rem', minHeight: '80px' }}>{plan.description}</p>
