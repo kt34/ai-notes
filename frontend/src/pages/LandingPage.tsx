@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { LandingNavBar } from '../components/LandingNavBar';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const heroH1Ref = useRef<HTMLHeadingElement>(null);
   const heroPRef = useRef<HTMLParagraphElement>(null);
@@ -35,6 +38,14 @@ export function LandingPage() {
   const isCtaTitleVisible = useIntersectionObserver(ctaTitleRef, { threshold: 0.1 });
   const isCtaPVisible = useIntersectionObserver(ctaPRef, { threshold: 0.1 });
   const isCtaButtonVisible = useIntersectionObserver(ctaButtonRef, { threshold: 0.1 });
+
+  // Helper function to format time
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div style={{
@@ -136,7 +147,7 @@ export function LandingPage() {
               e.currentTarget.style.boxShadow = '0 4px 20px rgba(100, 108, 255, 0.3)';
             }}
           >
-            Get Started Free
+            Get Started Now
           </button>
         </div>
 
@@ -180,17 +191,132 @@ export function LandingPage() {
             background: 'linear-gradient(45deg, rgba(86, 88, 245, 0.05) 0%, rgba(140, 142, 255, 0.05) 100%)',
             pointerEvents: 'none'
           }} />
-          <img 
-            src="/images/recording-preview.png"
-            alt="notez.ai in action"
-            style={{
-              width: '100%',
-              height: 'auto',
-              borderRadius: '8px',
+          <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+            <video 
+              src="/images/landing-page.mp4"
+              poster="/images/recording-preview.png"
+              playsInline
+              style={{
+                width: '100%',
+                height: 'auto',
+                borderRadius: '8px 8px 0 0',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderBottom: 'none',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                display: 'block'
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                const video = e.currentTarget;
+                if (video.paused) {
+                  video.play();
+                  setIsVideoPlaying(true);
+                } else {
+                  video.pause();
+                  setIsVideoPlaying(false);
+                }
+              }}
+              onPlay={() => setIsVideoPlaying(true)}
+              onPause={() => setIsVideoPlaying(false)}
+              onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+              onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+            />
+            {!isVideoPlaying && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  opacity: 0.8
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const video = e.currentTarget.parentElement?.querySelector('video');
+                  if (video) {
+                    if (video.paused) {
+                      video.play();
+                      setIsVideoPlaying(true);
+                    } else {
+                      video.pause();
+                      setIsVideoPlaying(false);
+                    }
+                  }
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+                  e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
+                  e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
+                }}
+              >
+                <span style={{ color: 'white', fontSize: '24px', marginLeft: '4px' }}>▶</span>
+              </div>
+            )}
+            
+            {/* Custom Video Controls */}
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.8)',
+              padding: '0.75rem 1rem',
+              borderRadius: '0 0 8px 8px',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              transition: 'all 0.3s ease'
-            }}
-          />
+              borderTop: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}>
+              {/* Progress Bar */}
+              <div style={{
+                flex: 1,
+                height: '4px',
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '2px',
+                position: 'relative',
+                cursor: 'pointer'
+              }}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                const video = e.currentTarget.parentElement?.parentElement?.querySelector('video');
+                if (video && duration) {
+                  video.currentTime = percentage * duration;
+                }
+              }}
+              >
+                <div style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #5658f5, #8c8eff)',
+                  borderRadius: '2px',
+                  width: `${duration ? (currentTime / duration) * 100 : 0}%`,
+                  transition: 'width 0.1s ease'
+                }} />
+              </div>
+              
+              {/* Time Display */}
+              <div style={{
+                color: 'white',
+                fontSize: '0.85rem',
+                fontFamily: 'monospace',
+                minWidth: '80px',
+                textAlign: 'right'
+              }}>
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -425,7 +551,7 @@ export function LandingPage() {
               e.currentTarget.style.boxShadow = '0 4px 20px rgba(100, 108, 255, 0.3)';
             }}
           >
-            Get Started Free
+            Get Started Now
           </button>
         </div>
       </section>
