@@ -11,7 +11,7 @@ from .auth import (
     UserCreate, UserLogin, register_user, login_user, logout_user, 
     get_current_user, get_authenticated_user_from_header, SupabaseUser, 
     VerifyEmailRequest, AuthResponse, ResendVerificationRequest, 
-    resend_verification_email, forgot_password, ForgotPasswordRequest
+    resend_verification_email, forgot_password, ForgotPasswordRequest, verify_email
 )
 from .user_usages import (
     get_usage, 
