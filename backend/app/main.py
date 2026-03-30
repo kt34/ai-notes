@@ -443,6 +443,9 @@ async def update_subscription_after_payment(
             "plan_type": plan_type
         }
         
+    except HTTPException as e:
+        # Preserve HTTPExceptions raised inside the try block (e.g. 400/403/404).
+        raise e
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
@@ -470,6 +473,9 @@ async def cancel_subscription(current_user: SupabaseUser = Depends(get_authentic
 
         return {"success": True, "message": "Your subscription has been successfully canceled."}
     
+    except HTTPException as e:
+        # Preserve HTTPExceptions raised inside the try block (e.g. 404).
+        raise e
     except stripe.error.StripeError as e:
         # Handle specific Stripe errors (e.g., subscription already canceled)
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
@@ -533,7 +539,12 @@ async def stripe_webhook(request: Request):
 
         print("Invoice is: " + str(invoice))
 
-        if invoice.billing_reason == 'subscription_cycle':
+        billing_reason = (
+            invoice.get("billing_reason")
+            if hasattr(invoice, "get")
+            else getattr(invoice, "billing_reason", None)
+        )
+        if billing_reason == 'subscription_cycle':
             print("Subscription Payment Invoice Received")
             stripe_customer_id = invoice.get('customer')
 
@@ -585,8 +596,21 @@ async def stripe_webhook(request: Request):
                     elif price_id == settings.STRIPE_PRICE_PRO: plan_type = "pro"
                     elif price_id == settings.STRIPE_PRICE_MAX: plan_type = "max"
                     
+                    # Persist Stripe subscription period timestamps so usage period is correct.
+                    stripe_subscription_id = subscription.get("id")
+                    period = subscription["items"]["data"][0]
+                    start_date = period.get("current_period_start")
+                    end_date = period.get("current_period_end")
+
                     # Update the user's plan in your database
-                    await update_usage_plan(user_id, plan_type)
+                    await update_usage_plan(
+                        user_id,
+                        plan_type,
+                        stripe_subscription_id=stripe_subscription_id,
+                        stripe_customer_id=stripe_customer_id,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
                     print(f"✅ Successfully updated plan to '{plan_type}' for user {user_id}")
 
             except Exception as e:

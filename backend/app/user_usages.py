@@ -14,9 +14,10 @@ async def get_usage(user_id: str):
 async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription_id: str = None, stripe_customer_id: str = None, start_date: int = None, end_date: int = None, is_cancelled: bool = None):
     try:
         update_data = {"subscription_status": updated_plan}
-        if stripe_subscription_id:
+        # `stripe_subscription_id` can legitimately be the empty string when we want to clear it.
+        if stripe_subscription_id is not None:
             update_data["stripe_subscription_id"] = stripe_subscription_id
-        if stripe_customer_id:
+        if stripe_customer_id is not None:
             update_data["stripe_customer_id"] = stripe_customer_id
         if is_cancelled is not None:
             update_data["is_cancelled"] = is_cancelled
@@ -31,13 +32,22 @@ async def update_usage_plan(user_id: str, updated_plan: str, stripe_subscription
         print(type(end_date))
 
         if updated_plan != "free":
-            start_date_dt = datetime.fromtimestamp(start_date, tz=timezone.utc)
-            end_date_dt = datetime.fromtimestamp(end_date, tz=timezone.utc)
+            # For non-free plans we normally persist Stripe's current billing period.
+            # Webhook payloads can occasionally arrive without timestamps; in that case,
+            # we still update the profile, but we skip usage-period persistence.
+            if start_date is not None and end_date is not None:
+                start_date_dt = datetime.fromtimestamp(start_date, tz=timezone.utc)
+                end_date_dt = datetime.fromtimestamp(end_date, tz=timezone.utc)
 
-            print(start_date_dt)
-            print(end_date_dt)
+                print(start_date_dt)
+                print(end_date_dt)
 
-            supabase.table("user_usage").update({"usage_period_start": start_date_dt.isoformat(), "usage_period_end": end_date_dt.isoformat()}).eq("user_id", user_id).execute()
+                supabase.table("user_usage").update(
+                    {
+                        "usage_period_start": start_date_dt.isoformat(),
+                        "usage_period_end": end_date_dt.isoformat(),
+                    }
+                ).eq("user_id", user_id).execute()
         else:
             current_time = datetime.now(timezone.utc)
             supabase.table("user_usage").update({"usage_period_start": current_time.isoformat(), "usage_period_end": "infinity"}).eq("user_id", user_id).execute()
